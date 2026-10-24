@@ -46,6 +46,14 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA app REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 \ir tables/21_invoice_workflow.sql
 \ir tables/22_invoice_source_emails.sql
 
+-- ---- Invoice integrations (Settings > SAP Configuration, background sync) ----
+\ir tables/23_integrations.sql
+\ir tables/24_integration_profiles.sql
+\ir tables/25_integration_sync_jobs.sql
+\ir tables/26_integration_sync_errors.sql
+\ir tables/27_invoice_external_refs.sql
+\ir tables/28_integration_audit_log.sql
+
 -- ---- Rebuild programmability: functions, views and composite types ----
 DO $$
 DECLARE r record;
@@ -69,6 +77,9 @@ END $$;
 
 -- ---- Request types ----
 \ir types/request/udt_invoice_input.sql
+\ir types/request/udt_integration_profile_input.sql
+\ir types/request/udt_external_invoice_input.sql
+\ir types/request/udt_sync_error_input.sql
 
 -- ---- Response types (nested types first) ----
 \ir types/response/udt_code_result.sql
@@ -95,10 +106,20 @@ END $$;
 \ir types/response/udt_master_data_result.sql
 \ir types/response/udt_master_data_list_result.sql
 \ir types/response/udt_master_data_option_result.sql
+\ir types/response/udt_integration_profile_result.sql
+\ir types/response/udt_integration_result.sql
+\ir types/response/udt_integration_secret_result.sql
+\ir types/response/udt_sync_job_result.sql
+\ir types/response/udt_sync_job_list_result.sql
+\ir types/response/udt_sync_error_list_result.sql
+\ir types/response/udt_sync_row_outcome_result.sql
+\ir types/response/udt_integration_summary_result.sql
 
 -- ---- Helper functions & views ----
 \ir functions/ufn_like_contains.sql
 \ir functions/ufn_master_data_select_sql.sql
+\ir functions/ufn_integration_row.sql
+\ir functions/ufn_sync_job_row.sql
 \ir views/vw_user_summary.sql
 \ir views/vw_invoice_summary.sql
 
@@ -137,6 +158,31 @@ END $$;
 \ir procedures/master_data/usp_master_data_delete.sql
 
 \ir procedures/lookups/usp_lookup_get_all.sql
+
+\ir procedures/integrations/usp_integration_list.sql
+\ir procedures/integrations/usp_integration_get.sql
+\ir procedures/integrations/usp_integration_save.sql
+\ir procedures/integrations/usp_integration_set_secret.sql
+\ir procedures/integrations/usp_integration_get_secret.sql
+\ir procedures/integrations/usp_integration_delete.sql
+\ir procedures/integrations/usp_integration_audit_add.sql
+\ir procedures/integrations/usp_integration_set_next_run.sql
+\ir procedures/integrations/usp_integration_due_list.sql
+\ir procedures/integrations/usp_integration_summary.sql
+\ir procedures/integrations/usp_integration_profile_reset_cursor.sql
+\ir procedures/integrations/usp_integration_purge_history.sql
+\ir procedures/integrations/usp_sync_job_enqueue.sql
+\ir procedures/integrations/usp_sync_job_claim.sql
+\ir procedures/integrations/usp_sync_job_heartbeat.sql
+\ir procedures/integrations/usp_sync_page_apply.sql
+\ir procedures/integrations/usp_sync_job_finish.sql
+\ir procedures/integrations/usp_sync_job_release.sql
+\ir procedures/integrations/usp_sync_job_cancel.sql
+\ir procedures/integrations/usp_sync_job_recover_stale.sql
+\ir procedures/integrations/usp_sync_job_list.sql
+\ir procedures/integrations/usp_sync_job_get.sql
+\ir procedures/integrations/usp_sync_error_add.sql
+\ir procedures/integrations/usp_sync_error_list.sql
 
 COMMIT;
 

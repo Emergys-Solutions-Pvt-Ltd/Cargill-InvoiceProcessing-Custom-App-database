@@ -108,6 +108,25 @@ SELECT * FROM app.usp_invoice_create_batch(p_module_id => 1, p_created_by => 1,
                    "cuit":"30-50001234-9","amount":100,"status":"Pending","reception_date":"2026-10-21"}]');
 ```
 
+### Invoice integrations (Settings > SAP Configuration)
+
+Tables `23_integrations` … `28_integration_audit_log` hold integration settings (provider-specific
+JSON, encrypted secret), extraction profiles (target module, mapping, cursor), the sync job queue +
+history, record-level errors, `invoice_external_refs` (unique `(source_system, external_key)`: one
+invoice per source document) and the audit log. Functions under `procedures/integrations/`:
+
+| Function | Purpose |
+|---|---|
+| `usp_integration_list` / `_get` / `_save` / `_delete` | Configuration CRUD (`_save` replaces the profiles; `version` for concurrency) |
+| `usp_integration_set_secret` / `_get_secret` | Encrypted credentials (ciphertext only; never returned by `_get`) |
+| `usp_integration_due_list` / `_set_next_run` | Scheduler |
+| `usp_sync_job_enqueue` / `_claim` / `_heartbeat` / `_finish` / `_release` / `_cancel` / `_recover_stale` | Job queue (one active job per integration; claim with `SKIP LOCKED`) |
+| `usp_sync_page_apply` | Idempotent upsert of one page: row savepoints, counters, errors and cursor in one transaction; never overwrites status / team / assignee |
+| `usp_sync_job_list` / `_get`, `usp_sync_error_add` / `_list`, `usp_integration_summary` | History, errors, dashboard |
+| `usp_integration_profile_reset_cursor`, `usp_integration_purge_history`, `usp_integration_audit_add` | Full re-sync, retention, audit |
+
+`tests/test_integrations.sql` exercises them inside a rolled-back transaction.
+
 ## Changing the schema
 
 - **Tables**: append guarded statements to the table file's UPGRADES section, for example
