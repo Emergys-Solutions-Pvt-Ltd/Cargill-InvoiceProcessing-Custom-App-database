@@ -6,6 +6,7 @@
 --             attachments = app.udt_attachment_result[] (primary first)
 --             line_items  = app.udt_line_item_result[]
 --             ccpps       = app.udt_ccpp_result[]
+--             source_email = app.udt_invoice_email_result (NULL when not received by email)
 --           The caller checks access using invoice.application_code.
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_invoice_get_by_code(p_invoice_code text)
@@ -43,7 +44,21 @@ AS $$
                        c.id, c.product, c.legal_doc_issuer, c.status, c.value, c.km, c.tons, c.unit_rate, c.km_fc, c.tons_fc
                    )::app.udt_ccpp_result) ORDER BY c.id)
             FROM app.invoice_ccpps c WHERE c.invoice_id = v.id
-        ), '[]'::jsonb)
+        ), '[]'::jsonb),
+        (
+            SELECT to_jsonb(ROW(
+                       e.id, e.message_id, e.from_name, e.from_address, e.to_addresses, e.cc_addresses,
+                       e.subject, e.body_text, e.received_at,
+                       coalesce((
+                           SELECT jsonb_agg(to_jsonb(ROW(
+                                      att.id, att.invoice_id, att.file_name, att.title, att.category, att.mime_type,
+                                      att.size_bytes, att.storage_path, att.is_primary, att.uploaded_at, v.application_code
+                                  )::app.udt_attachment_result) ORDER BY att.is_primary DESC, att.id)
+                           FROM app.invoice_attachments att WHERE att.source_email_id = e.id
+                       ), '[]'::jsonb)
+                   )::app.udt_invoice_email_result)
+            FROM app.invoice_source_emails e WHERE e.invoice_id = v.id
+        )
     FROM app.vw_invoice_summary v
     WHERE v.invoice_code = p_invoice_code;
 $$;

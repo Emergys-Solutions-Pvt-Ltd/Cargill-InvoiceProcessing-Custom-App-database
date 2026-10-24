@@ -182,12 +182,16 @@ COMMIT;
 -- Configuration master data (countries, states, cities, BUs, team codes, processes)
 \ir seed_master_data.sql
 
+-- Emails the invoice PDFs were received through (Invoice Details > PDF preview > Email)
+\ir seed_source_emails.sql
+
 SELECT 'applications' AS tbl, count(*) AS row_count FROM app.applications
 UNION ALL SELECT 'app_modules', count(*) FROM app.app_modules
 UNION ALL SELECT 'users', count(*) FROM app.users
 UNION ALL SELECT 'invoices', count(*) FROM app.invoices
 UNION ALL SELECT 'invoice_attachments', count(*) FROM app.invoice_attachments
 UNION ALL SELECT 'invoice_ccpps', count(*) FROM app.invoice_ccpps
+UNION ALL SELECT 'invoice_source_emails', count(*) FROM app.invoice_source_emails
 UNION ALL SELECT 'countries / states / cities', (SELECT count(*) FROM app.countries) + (SELECT count(*) FROM app.states) + (SELECT count(*) FROM app.cities)
 UNION ALL SELECT 'business_units', count(*) FROM app.business_units
 UNION ALL SELECT 'statuses', count(*) FROM app.statuses

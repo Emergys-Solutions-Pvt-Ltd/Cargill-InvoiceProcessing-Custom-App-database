@@ -44,6 +44,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA app REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 \ir tables/19_processes.sql
 \ir tables/20_master_data_entities.sql
 \ir tables/21_invoice_workflow.sql
+\ir tables/22_invoice_source_emails.sql
 
 -- ---- Rebuild programmability: functions, views and composite types ----
 DO $$
@@ -82,6 +83,7 @@ END $$;
 \ir types/response/udt_attachment_result.sql
 \ir types/response/udt_line_item_result.sql
 \ir types/response/udt_ccpp_result.sql
+\ir types/response/udt_invoice_email_result.sql
 \ir types/response/udt_invoice_detail_result.sql
 \ir types/response/udt_app_settings_result.sql
 \ir types/response/udt_team_member_result.sql

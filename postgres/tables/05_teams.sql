@@ -16,5 +16,12 @@ ALTER TABLE app.teams ADD COLUMN IF NOT EXISTS sort_order  integer        NOT NU
 ALTER TABLE app.teams ADD COLUMN IF NOT EXISTS is_active   boolean        NOT NULL DEFAULT true;
 ALTER TABLE app.teams ADD COLUMN IF NOT EXISTS created_at  timestamptz(0) NOT NULL DEFAULT now();
 ALTER TABLE app.teams ADD COLUMN IF NOT EXISTS updated_at  timestamptz(0) NOT NULL DEFAULT now();
-ALTER TABLE app.teams ALTER COLUMN name TYPE varchar(150);
+-- Guarded: once widened, views (vw_invoice_summary) depend on the column and block ALTER TYPE
+DO $$
+BEGIN
+    IF (SELECT character_maximum_length FROM information_schema.columns
+        WHERE table_schema = 'app' AND table_name = 'teams' AND column_name = 'name') < 150 THEN
+        ALTER TABLE app.teams ALTER COLUMN name TYPE varchar(150);
+    END IF;
+END $$;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_teams_code ON app.teams (lower(code)) WHERE code IS NOT NULL;
