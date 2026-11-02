@@ -143,6 +143,9 @@ END $$;
 \ir procedures/invoices/usp_invoice_update_status.sql
 \ir procedures/invoices/usp_attachment_get_by_id.sql
 \ir procedures/invoices/usp_attachment_add.sql
+\ir procedures/invoices/usp_attachment_storage_context.sql
+\ir procedures/invoices/usp_attachment_list_by_provider.sql
+\ir procedures/invoices/usp_attachment_set_storage.sql
 \ir procedures/invoices/usp_invoice_update_details.sql
 \ir procedures/invoices/usp_invoice_send_to_previous_team.sql
 \ir procedures/invoices/usp_ccpp_list.sql

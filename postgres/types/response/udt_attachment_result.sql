@@ -1,7 +1,7 @@
 -- =====================================================================
 -- app.udt_attachment_result - RESPONSE type: invoice attachment metadata
 -- Returned by: usp_attachment_get_by_id; element type of udt_invoice_detail_result.attachments
--- storage_path is relative to the backend storage root; never expose it to browsers.
+-- storage_path is relative to the backend storage root (local) or the object key (s3); never expose it to browsers.
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_attachment_result AS (
@@ -15,5 +15,8 @@ CREATE TYPE app.udt_attachment_result AS (
     storage_path        varchar(500),
     is_primary          boolean,
     uploaded_at         timestamptz(0),
-    application_code    varchar(50)
+    application_code    varchar(50),
+    storage_provider    varchar(20),            -- local | s3
+    storage_bucket      varchar(255),
+    content_sha256      char(64)
 );

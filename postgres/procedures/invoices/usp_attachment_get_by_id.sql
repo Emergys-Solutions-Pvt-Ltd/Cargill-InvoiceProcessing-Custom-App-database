@@ -9,7 +9,8 @@ LANGUAGE sql
 STABLE
 AS $$
     SELECT att.id, att.invoice_id, att.file_name, att.title, att.category, att.mime_type, att.size_bytes,
-           att.storage_path, att.is_primary, att.uploaded_at, a.code
+           att.storage_path, att.is_primary, att.uploaded_at, a.code,
+           att.storage_provider, att.storage_bucket, att.content_sha256
     FROM app.invoice_attachments att
     JOIN app.invoices i     ON i.id = att.invoice_id
     JOIN app.app_modules m  ON m.id = i.module_id

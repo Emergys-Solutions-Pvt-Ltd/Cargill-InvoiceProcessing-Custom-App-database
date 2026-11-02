@@ -23,3 +23,23 @@ CREATE INDEX IF NOT EXISTS ix_invoice_attachments_invoice ON app.invoice_attachm
 CREATE UNIQUE INDEX IF NOT EXISTS ux_invoice_attachments_primary ON app.invoice_attachments (invoice_id) WHERE is_primary;
 
 -- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----
+-- Where the file lives: 'local' = storage_path below STORAGE_DIR; 's3' = object key storage_path in
+-- storage_bucket (S3 layout <App>/<YYYY>/<Mon>/<file name>). Checksum + ETag for integrity checks.
+ALTER TABLE app.invoice_attachments ADD COLUMN IF NOT EXISTS storage_provider varchar(20)  NOT NULL DEFAULT 'local';
+ALTER TABLE app.invoice_attachments ADD COLUMN IF NOT EXISTS storage_bucket   varchar(255) NULL;
+ALTER TABLE app.invoice_attachments ADD COLUMN IF NOT EXISTS content_sha256   char(64)     NULL;
+ALTER TABLE app.invoice_attachments ADD COLUMN IF NOT EXISTS storage_etag     varchar(200) NULL;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ck_invoice_attachments_provider') THEN
+        ALTER TABLE app.invoice_attachments ADD CONSTRAINT ck_invoice_attachments_provider
+            CHECK (storage_provider IN ('local', 's3') AND (storage_provider = 'local' OR storage_bucket IS NOT NULL));
+    END IF;
+END $$;
+
+-- One attachment row per S3 object
+CREATE UNIQUE INDEX IF NOT EXISTS ux_invoice_attachments_s3_object
+    ON app.invoice_attachments (storage_bucket, storage_path) WHERE storage_provider = 's3';
+-- Migration of local files to S3 pages through local rows
+CREATE INDEX IF NOT EXISTS ix_invoice_attachments_provider ON app.invoice_attachments (storage_provider, id);

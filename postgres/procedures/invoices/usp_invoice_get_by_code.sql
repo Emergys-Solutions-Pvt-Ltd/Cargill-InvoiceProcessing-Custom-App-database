@@ -30,7 +30,8 @@ AS $$
         coalesce((
             SELECT jsonb_agg(to_jsonb(ROW(
                        att.id, att.invoice_id, att.file_name, att.title, att.category, att.mime_type, att.size_bytes,
-                       att.storage_path, att.is_primary, att.uploaded_at, v.application_code
+                       att.storage_path, att.is_primary, att.uploaded_at, v.application_code,
+                       att.storage_provider, att.storage_bucket, att.content_sha256
                    )::app.udt_attachment_result) ORDER BY att.is_primary DESC, att.id)
             FROM app.invoice_attachments att WHERE att.invoice_id = v.id
         ), '[]'::jsonb),
@@ -66,7 +67,8 @@ AS $$
                        coalesce((
                            SELECT jsonb_agg(to_jsonb(ROW(
                                       att.id, att.invoice_id, att.file_name, att.title, att.category, att.mime_type,
-                                      att.size_bytes, att.storage_path, att.is_primary, att.uploaded_at, v.application_code
+                                      att.size_bytes, att.storage_path, att.is_primary, att.uploaded_at, v.application_code,
+                                      att.storage_provider, att.storage_bucket, att.content_sha256
                                   )::app.udt_attachment_result) ORDER BY att.is_primary DESC, att.id)
                            FROM app.invoice_attachments att WHERE att.source_email_id = e.id
                        ), '[]'::jsonb)

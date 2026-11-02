@@ -1,7 +1,8 @@
 -- =====================================================================
 -- app.usp_attachment_add - registers a file uploaded from the Invoice Details PDF viewer
 -- (the backend has already written it under the storage root).
--- Request:  p_invoice_code, file metadata, p_storage_path (relative to the storage root),
+-- Request:  p_invoice_code, file metadata, p_storage_path (relative to the storage root, or the S3 key),
+--           p_storage_provider (local | s3), p_storage_bucket (s3), p_content_sha256, p_storage_etag,
 --           p_is_primary = true makes it the invoice's main PDF (the previous one stays attached)
 -- Response: app.udt_attachment_result
 -- Errors:   CA404 invoice not found
@@ -14,7 +15,11 @@ CREATE OR REPLACE FUNCTION app.usp_attachment_add(
     p_mime_type     text,
     p_size_bytes    bigint,
     p_storage_path  text,
-    p_is_primary    boolean DEFAULT false
+    p_is_primary    boolean DEFAULT false,
+    p_storage_provider  text DEFAULT 'local',
+    p_storage_bucket    text DEFAULT NULL,
+    p_content_sha256    text DEFAULT NULL,
+    p_storage_etag      text DEFAULT NULL
 )
 RETURNS app.udt_attachment_result
 LANGUAGE plpgsql
@@ -38,11 +43,14 @@ BEGIN
     END IF;
 
     INSERT INTO app.invoice_attachments
-        (invoice_id, file_name, title, category, mime_type, size_bytes, storage_path, is_primary)
+        (invoice_id, file_name, title, category, mime_type, size_bytes, storage_path, is_primary,
+         storage_provider, storage_bucket, content_sha256, storage_etag)
     VALUES
         (v_invoice_id, p_file_name, nullif(btrim(p_title), ''), coalesce(nullif(btrim(p_category), ''), 'Uploaded Document'),
-         coalesce(p_mime_type, 'application/pdf'), p_size_bytes, p_storage_path, coalesce(p_is_primary, false))
-    RETURNING id, invoice_id, file_name, title, category, mime_type, size_bytes, storage_path, is_primary, uploaded_at, v_app_code
+         coalesce(p_mime_type, 'application/pdf'), p_size_bytes, p_storage_path, coalesce(p_is_primary, false),
+         coalesce(p_storage_provider, 'local'), p_storage_bucket, p_content_sha256, left(p_storage_etag, 200))
+    RETURNING id, invoice_id, file_name, title, category, mime_type, size_bytes, storage_path, is_primary, uploaded_at, v_app_code,
+              storage_provider, storage_bucket, content_sha256
     INTO v_result;
 
     RETURN v_result;
