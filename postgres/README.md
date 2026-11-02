@@ -124,6 +124,7 @@ invoice per source document) and the audit log. Functions under `procedures/inte
 | `usp_sync_page_apply` | Idempotent upsert of one page: row savepoints, counters, errors and cursor in one transaction; never overwrites status / team / assignee |
 | `usp_sync_job_list` / `_get`, `usp_sync_error_add` / `_list`, `usp_integration_summary` | History, errors, dashboard |
 | `usp_integration_profile_reset_cursor`, `usp_integration_purge_history`, `usp_integration_audit_add` | Full re-sync, retention, audit |
+| `usp_integration_invoices_without_attachment` | ECM providers (OnBase): which invoices still need their source document attached |
 
 `tests/test_integrations.sql` exercises them inside a rolled-back transaction.
 

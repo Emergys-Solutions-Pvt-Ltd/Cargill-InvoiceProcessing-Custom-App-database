@@ -171,6 +171,7 @@ END $$;
 \ir procedures/integrations/usp_integration_summary.sql
 \ir procedures/integrations/usp_integration_profile_reset_cursor.sql
 \ir procedures/integrations/usp_integration_purge_history.sql
+\ir procedures/integrations/usp_integration_invoices_without_attachment.sql
 \ir procedures/integrations/usp_sync_job_enqueue.sql
 \ir procedures/integrations/usp_sync_job_claim.sql
 \ir procedures/integrations/usp_sync_job_heartbeat.sql
