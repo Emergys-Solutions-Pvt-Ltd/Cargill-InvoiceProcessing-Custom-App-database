@@ -121,6 +121,21 @@ table file's own header for the full reasoning and the small number of SF fields
 it as `sf_fields` (NULL until the invoice has a row). No write path exists yet - that's the
 obvious next piece once the read side is confirmed against the frontend's field list.
 
+### SJO invoice fields (SJO Invoice Processing: list, Create / Bulk Upload, Invoice Details)
+
+`app.invoice_sjo_fields` (`31_invoice_sjo_fields.sql`) is a 1:1 satellite table for SJO invoices:
+Country, BU and ERP (FKs to `app.countries`, `app.business_units` and the new master-data list
+`app.erp_systems` - Configuration > ERP Systems, `30_erp_systems.sql`), ID Fiscal (required),
+A.B. Number / A.B. Name, and the Flow Turn Down / Critical Vendor / Urgent Invoice flags. Invoice ID
+is `invoices.invoice_code` and Assign To is `invoices.assigned_user_id`. SJO invoices identify the
+vendor by ID Fiscal / A.B., so `invoices.vendor_id` is nullable and `vw_invoice_summary` LEFT JOINs
+vendors. `usp_invoice_create_batch` requires country / BU / ERP (code or name) and `id_fiscal` for
+SJO modules (vendor / CUIT / amount optional there) and validates `assigned_user_id` for every app;
+`usp_invoice_list` (column `sjo_fields`, searchable by ID Fiscal / A.B.) and
+`usp_invoice_get_by_code` return them via `ufn_invoice_sjo_fields`; `usp_invoice_sjo_fields_save`
+is the Invoice Details "Save". `seed_master_data.sql` adds the Central American countries, BU `CFN`
+and ERPs `JDE` / `SAP`.
+
 ### CCPP tab (GP Invoice Detail page)
 
 `app.invoice_ccpps` (one invoice → many rows) already backed the `ccpps[]` array embedded in

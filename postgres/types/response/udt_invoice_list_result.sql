@@ -8,5 +8,6 @@ CREATE TYPE app.udt_invoice_list_result AS (
     total_items    integer,
     total_pages    integer,
     page           integer,
-    page_size      integer
+    page_size      integer,
+    sjo_fields     jsonb                 -- app.udt_invoice_sjo_fields_result, NULL for non-SJO invoices
 );

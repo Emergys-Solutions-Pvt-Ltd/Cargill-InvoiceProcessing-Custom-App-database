@@ -8,6 +8,7 @@
 --             ccpps       = app.udt_ccpp_result[]
 --             source_email = app.udt_invoice_email_result (NULL when not received by email)
 --             sf_fields    = app.udt_invoice_sf_fields_result (NULL when the invoice has no row yet)
+--             sjo_fields   = app.udt_invoice_sjo_fields_result (NULL for non-SJO invoices)
 --           The caller checks access using invoice.application_code.
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_invoice_get_by_code(p_invoice_code text)
@@ -93,7 +94,8 @@ AS $$
                        sf.cantidad, sf.description, sf.ros_cuit_legacy_id, sf.due_date_invoice, sf.producto
                    )::app.udt_invoice_sf_fields_result)
             FROM app.invoice_sf_fields sf WHERE sf.invoice_id = v.id
-        )
+        ),
+        app.ufn_invoice_sjo_fields(v.id)
     FROM app.vw_invoice_summary v
     WHERE v.invoice_code = p_invoice_code;
 $$;

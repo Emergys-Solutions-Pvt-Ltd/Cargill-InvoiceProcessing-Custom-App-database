@@ -15,7 +15,10 @@ INSERT INTO app.countries (code, name, sort_order)
 SELECT v.code, v.name, v.ord
 FROM (VALUES
     ('ARG', 'Argentina', 10), ('BRA', 'Brazil', 20), ('URU', 'Uruguay', 30),
-    ('PAR', 'Paraguay', 40), ('CHL', 'Chile', 50), ('USA', 'United States', 60)
+    ('PAR', 'Paraguay', 40), ('CHL', 'Chile', 50), ('USA', 'United States', 60),
+    -- SJO Invoice Processing (Central America)
+    ('CRI', 'Costa Rica', 70), ('NIC', 'Nicaragua', 80), ('GTM', 'Guatemala', 90),
+    ('HND', 'Honduras', 100), ('SLV', 'El Salvador', 110), ('PAN', 'Panama', 120)
 ) AS v (code, name, ord)
 WHERE NOT EXISTS (SELECT 1 FROM app.countries c WHERE lower(c.code) = lower(v.code) OR lower(c.name) = lower(v.name));
 
@@ -61,7 +64,8 @@ FROM (VALUES
     ('GP',     'General Payments',             'Global payment processing operations',      10),
     ('SJO',    'San José Operations',          'SJO invoice and index processing',          20),
     ('ROSPBU', 'Rosario Port Business Unit',   'Rosario port freight and invoice reporting', 30),
-    ('GOSC',   'Grain & Oilseeds Supply Chain','Origination, freight and storage',          40)
+    ('GOSC',   'Grain & Oilseeds Supply Chain','Origination, freight and storage',          40),
+    ('CFN',    'CFN',                          'Business unit used by SJO invoices',        50)
 ) AS v (code, name, description, ord)
 WHERE NOT EXISTS (SELECT 1 FROM app.business_units b WHERE lower(b.code) = lower(v.code) OR lower(b.name) = lower(v.name));
 
@@ -134,3 +138,12 @@ JOIN queues q ON q.idx = t.k % q.n
 WHERE i.id = t.id;
 
 COMMIT;
+
+-- ERP systems (SJO invoice "ERP" list) - runs after the COMMIT above, on its own
+INSERT INTO app.erp_systems (code, name, description, sort_order)
+SELECT v.code, v.name, v.description, v.ord
+FROM (VALUES
+    ('JDE', 'JD Edwards', 'Oracle JD Edwards EnterpriseOne', 10),
+    ('SAP', 'SAP',        'SAP S/4HANA / ECC',               20)
+) AS v (code, name, description, ord)
+WHERE NOT EXISTS (SELECT 1 FROM app.erp_systems e WHERE lower(e.code) = lower(v.code) OR lower(e.name) = lower(v.name));

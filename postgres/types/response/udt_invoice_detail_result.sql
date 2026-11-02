@@ -10,5 +10,6 @@ CREATE TYPE app.udt_invoice_detail_result AS (
     line_items     jsonb,                -- array of app.udt_line_item_result
     ccpps          jsonb,                -- array of app.udt_ccpp_result
     source_email   jsonb,                -- app.udt_invoice_email_result, NULL when not received by email
-    sf_fields      jsonb                 -- app.udt_invoice_sf_fields_result, NULL when the invoice has no row yet
+    sf_fields      jsonb,                -- app.udt_invoice_sf_fields_result, NULL when the invoice has no row yet
+    sjo_fields     jsonb                 -- app.udt_invoice_sjo_fields_result, NULL for non-SJO invoices
 );

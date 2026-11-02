@@ -54,6 +54,8 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA app REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 \ir tables/27_invoice_external_refs.sql
 \ir tables/28_integration_audit_log.sql
 \ir tables/29_invoice_sf_fields.sql
+\ir tables/30_erp_systems.sql
+\ir tables/31_invoice_sjo_fields.sql
 
 -- ---- Rebuild programmability: functions, views and composite types ----
 DO $$
@@ -97,6 +99,7 @@ END $$;
 \ir types/response/udt_ccpp_result.sql
 \ir types/response/udt_invoice_email_result.sql
 \ir types/response/udt_invoice_sf_fields_result.sql
+\ir types/response/udt_invoice_sjo_fields_result.sql
 \ir types/response/udt_invoice_detail_result.sql
 \ir types/response/udt_app_settings_result.sql
 \ir types/response/udt_team_member_result.sql
@@ -120,6 +123,7 @@ END $$;
 -- ---- Helper functions & views ----
 \ir functions/ufn_like_contains.sql
 \ir functions/ufn_master_data_select_sql.sql
+\ir functions/ufn_invoice_sjo_fields.sql
 \ir functions/ufn_integration_row.sql
 \ir functions/ufn_sync_job_row.sql
 \ir views/vw_user_summary.sql
@@ -147,6 +151,7 @@ END $$;
 \ir procedures/invoices/usp_attachment_list_by_provider.sql
 \ir procedures/invoices/usp_attachment_set_storage.sql
 \ir procedures/invoices/usp_invoice_update_details.sql
+\ir procedures/invoices/usp_invoice_sjo_fields_save.sql
 \ir procedures/invoices/usp_invoice_send_to_previous_team.sql
 \ir procedures/invoices/usp_ccpp_list.sql
 \ir procedures/invoices/usp_ccpp_save.sql

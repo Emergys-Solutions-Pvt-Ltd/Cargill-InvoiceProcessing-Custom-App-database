@@ -59,7 +59,7 @@ SELECT
 FROM app.invoices i
 JOIN app.app_modules m  ON m.id = i.module_id
 JOIN app.applications a ON a.id = m.application_id
-JOIN app.vendors v      ON v.id = i.vendor_id
+LEFT JOIN app.vendors v ON v.id = i.vendor_id      -- NULL for SJO invoices
 LEFT JOIN app.country_stations s ON s.id = i.station_id
 LEFT JOIN app.processes pr ON pr.id = i.process_id
 LEFT JOIN app.cities oc    ON oc.id = i.origin_city_id

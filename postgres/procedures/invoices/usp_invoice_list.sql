@@ -1,9 +1,10 @@
 -- =====================================================================
 -- app.usp_invoice_list - Invoices grid for one module (newest reception date first)
 -- Request:  p_module_id (from usp_app_module_get_by_slug), p_search (invoice id, vendor,
---           CUIT or station contains, case-insensitive), p_status ('ALL' or a status),
+--           CUIT, station, or SJO ID Fiscal / A.B. Number / A.B. Name contains, case-insensitive), p_status ('ALL' or a status),
 --           p_page (1-based, clamped), p_page_size (1-100)
--- Response: SETOF app.udt_invoice_list_result - invoice is an app.udt_invoice_result as JSON
+-- Response: SETOF app.udt_invoice_list_result - invoice is an app.udt_invoice_result as JSON,
+--           sjo_fields the SJO fields (app.udt_invoice_sjo_fields_result)
 -- Errors:   CA400 invalid page size
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_invoice_list(
@@ -36,7 +37,10 @@ BEGIN
                OR v.invoice_code    ILIKE v_pattern
                OR v.vendor_name     ILIKE v_pattern
                OR v.cuit            ILIKE v_pattern
-               OR v.country_station ILIKE v_pattern)
+               OR v.country_station ILIKE v_pattern
+               OR EXISTS (SELECT 1 FROM app.invoice_sjo_fields f
+                          WHERE f.invoice_id = v.id
+                            AND (f.id_fiscal ILIKE v_pattern OR f.ab_number ILIKE v_pattern OR f.ab_name ILIKE v_pattern)))
     ),
     paging AS (
         SELECT pages, least(greatest(coalesce(p_page, 1), 1), pages) AS page
@@ -53,7 +57,7 @@ BEGIN
                m.claim_number, m.additional_info, m.filenet_id, m.created_by, m.created_by_name,
                m.updated_by, m.updated_by_name, m.is_manual
            )::app.udt_invoice_result),
-           m.total, p.pages, p.page, p_page_size
+           m.total, p.pages, p.page, p_page_size, app.ufn_invoice_sjo_fields(m.id)
     FROM matches m CROSS JOIN paging p
     WHERE m.rn BETWEEN (p.page - 1) * p_page_size + 1 AND p.page * p_page_size
     ORDER BY m.rn;

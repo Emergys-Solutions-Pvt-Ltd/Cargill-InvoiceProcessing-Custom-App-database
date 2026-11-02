@@ -46,3 +46,5 @@ BEGIN
         ALTER TABLE app.invoices ADD CONSTRAINT fk_invoices_updated_by FOREIGN KEY (updated_by) REFERENCES app.users (id);
     END IF;
 END $$;
+-- SJO invoices identify the vendor by ID Fiscal / A.B. Number (app.invoice_sjo_fields), not by CUIT
+ALTER TABLE app.invoices ALTER COLUMN vendor_id DROP NOT NULL;
