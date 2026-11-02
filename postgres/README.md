@@ -60,6 +60,8 @@ psql "<connection>" -f database/postgres/seed.sql
 | `usp_invoice_create_batch` | `p_module_id`, `p_created_by`, `p_invoices jsonb` | `SETOF udt_code_result` |
 | `usp_invoice_update_status` | `p_invoice_code`, `p_status` | `udt_row_count_result` |
 | `usp_attachment_get_by_id` | `p_attachment_id` | `SETOF udt_attachment_result` |
+| `usp_ccpp_list` | `p_invoice_code` | `SETOF udt_ccpp_result` |
+| `usp_ccpp_save` | `p_invoice_code`, `p_user_id`, `p_product`, `p_status`, `p_id` (NULL = add), optional legacy SF fields | `udt_ccpp_result` |
 | `usp_team_list` | – | `SETOF udt_lookup_value_result` |
 | `usp_app_settings_get` | `p_module_id` | `udt_app_settings_result` |
 | `usp_app_settings_save` | `p_module_id`, optional settings, `p_updated_by` | `udt_app_settings_result` |
@@ -107,6 +109,31 @@ SELECT * FROM app.usp_invoice_create_batch(p_module_id => 1, p_created_by => 1,
   p_invoices => '[{"row_no":1,"invoice_code":"INV-GP-9001","vendor_name":"Molinos Agro S.A.",
                    "cuit":"30-50001234-9","amount":100,"status":"Pending","reception_date":"2026-10-21"}]');
 ```
+
+### Legacy Salesforce fields (GP Invoice Detail page)
+
+`app.invoice_sf_fields` is a 1:1 satellite table (one row per invoice, created lazily) holding
+58 fields from the legacy Salesforce "GP Invoice" object that have no other home in this schema
+(e.g. `po_number`, `cae_number`, `jde_number`, `is_high_priority`, `pending_reason` - see the
+table file's own header for the full reasoning and the small number of SF fields deliberately
+*not* carried over as pure SF automation/derived-formula artifacts). `app.invoices.updated_by`
+(parallel to `created_by`) also comes from this reconciliation. `usp_invoice_get_by_code` returns
+it as `sf_fields` (NULL until the invoice has a row). No write path exists yet - that's the
+obvious next piece once the read side is confirmed against the frontend's field list.
+
+### CCPP tab (GP Invoice Detail page)
+
+`app.invoice_ccpps` (one invoice → many rows) already backed the `ccpps[]` array embedded in
+`usp_invoice_get_by_code`'s response (used for "is CCPP Linked" and the per-row `product`). Its
+UPGRADES section adds 52 more fields from a separate legacy Salesforce "GP CCPP" object (a
+55-field export reconciled against this table 2026-11-02 - `../shared/handoffs/database.md`; 3
+fields not carried over: the invoice link itself and two SF formulas derivable via the FK) so the
+new CCPP tab (its own view/update/add screen, distinct from the unchanged Details tab) has a real
+table to read and write, rather than overlapping with a second new table. `created_by` / `updated_by`
+are real FKs to `app.users`, same pattern as on `app.invoices`; `owner_legacy_id` / `user_legacy_id`
+are raw legacy ids (SF `Owner` is a polymorphic `Lookup(User,Group)`; SF `User` is plain text
+despite the name) - same shape as `app.invoice_sf_fields`. `usp_ccpp_list` lists an invoice's rows;
+`usp_ccpp_save` adds (`p_id` NULL) or updates one row, requiring only `p_product` and `p_status`.
 
 ### Invoice integrations (Settings > SAP Configuration)
 

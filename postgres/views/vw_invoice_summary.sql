@@ -49,6 +49,11 @@ SELECT
     i.claim_number,
     i.additional_info,
     i.filenet_id,
+    i.created_by,
+    cb.name             AS created_by_name,
+    i.updated_by,
+    ub.name             AS updated_by_name,
+    NOT EXISTS (SELECT 1 FROM app.invoice_external_refs r WHERE r.invoice_id = i.id) AS is_manual,
     -- filter column, not part of udt_invoice_result
     i.module_id
 FROM app.invoices i
@@ -61,6 +66,8 @@ LEFT JOIN app.cities oc    ON oc.id = i.origin_city_id
 LEFT JOIN app.cities dc    ON dc.id = i.destination_city_id
 LEFT JOIN app.teams tm     ON tm.id = i.team_id
 LEFT JOIN app.users au     ON au.id = i.assigned_user_id
+LEFT JOIN app.users cb     ON cb.id = i.created_by
+LEFT JOIN app.users ub     ON ub.id = i.updated_by
 LEFT JOIN LATERAL (
     SELECT att.id, att.file_name, att.title, att.mime_type
     FROM app.invoice_attachments att

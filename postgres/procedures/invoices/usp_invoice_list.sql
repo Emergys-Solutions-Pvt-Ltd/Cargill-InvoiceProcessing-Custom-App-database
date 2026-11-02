@@ -50,7 +50,8 @@ BEGIN
                m.country_station, m.pdf_attachment_id, m.pdf_file_name, m.pdf_title, m.pdf_mime_type,
                m.process_id, m.process_name, m.origin_city_id, m.origin_name, m.destination_city_id,
                m.destination_name, m.team_id, m.team_name, m.assigned_user_id, m.assigned_user_name,
-               m.claim_number, m.additional_info, m.filenet_id
+               m.claim_number, m.additional_info, m.filenet_id, m.created_by, m.created_by_name,
+               m.updated_by, m.updated_by_name, m.is_manual
            )::app.udt_invoice_result),
            m.total, p.pages, p.page, p_page_size
     FROM matches m CROSS JOIN paging p

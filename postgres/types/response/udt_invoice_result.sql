@@ -4,6 +4,10 @@
 -- pdf_* columns describe the primary attachment (NULL when the invoice has none).
 -- process / origin / destination / team (stage) / assigned user / claim / FileNet are the
 -- workflow fields edited on the Invoice Details page.
+-- created_by_name / updated_by_name are display joins of created_by / updated_by (updated_by is
+-- NULL until a write sets it - nothing does yet, see app.invoices' UPGRADES section). is_manual =
+-- true when the invoice has no app.invoice_external_refs row, i.e. it did not come from an
+-- integration sync job - read-only / derived, not stored.
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_invoice_result AS (
@@ -48,5 +52,10 @@ CREATE TYPE app.udt_invoice_result AS (
     assigned_user_name           varchar(200),
     claim_number                 numeric(18,2),
     additional_info              varchar(1000),
-    filenet_id                   varchar(60)
+    filenet_id                   varchar(60),
+    created_by                   integer,
+    created_by_name              varchar(200),
+    updated_by                   integer,
+    updated_by_name              varchar(200),
+    is_manual                    boolean
 );

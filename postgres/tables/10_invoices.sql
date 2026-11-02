@@ -38,3 +38,11 @@ CREATE INDEX IF NOT EXISTS ix_invoices_module_received ON app.invoices (module_i
 CREATE INDEX IF NOT EXISTS ix_invoices_vendor          ON app.invoices (vendor_id);
 
 -- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----
+-- SF "Last Modified By" - parallel to created_by, who made the most recent update
+ALTER TABLE app.invoices ADD COLUMN IF NOT EXISTS updated_by integer NULL;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_invoices_updated_by') THEN
+        ALTER TABLE app.invoices ADD CONSTRAINT fk_invoices_updated_by FOREIGN KEY (updated_by) REFERENCES app.users (id);
+    END IF;
+END $$;
