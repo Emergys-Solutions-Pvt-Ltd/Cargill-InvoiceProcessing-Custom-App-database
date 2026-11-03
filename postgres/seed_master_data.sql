@@ -4,7 +4,7 @@
 -- Re-runnable: rows that already exist (same code / name) are left alone, so it can be
 -- applied to an existing database. Included by seed.sql; can also be run on its own:
 --   psql "<connection>" -f database/postgres/seed_master_data.sql
--- The core statuses are system data created by tables/18_statuses.sql.
+-- The core statuses are system data created by common/master-data/tables/18_statuses.sql.
 -- =====================================================================
 \set ON_ERROR_STOP on
 SET client_min_messages = warning;
@@ -140,10 +140,10 @@ WHERE i.id = t.id;
 COMMIT;
 
 -- ERP systems (SJO invoice "ERP" list) - runs after the COMMIT above, on its own
-INSERT INTO app.erp_systems (code, name, description, sort_order)
+INSERT INTO sjo.erp_systems (code, name, description, sort_order)
 SELECT v.code, v.name, v.description, v.ord
 FROM (VALUES
     ('JDE', 'JD Edwards', 'Oracle JD Edwards EnterpriseOne', 10),
     ('SAP', 'SAP',        'SAP S/4HANA / ECC',               20)
 ) AS v (code, name, description, ord)
-WHERE NOT EXISTS (SELECT 1 FROM app.erp_systems e WHERE lower(e.code) = lower(v.code) OR lower(e.name) = lower(v.name));
+WHERE NOT EXISTS (SELECT 1 FROM sjo.erp_systems e WHERE lower(e.code) = lower(v.code) OR lower(e.name) = lower(v.name));

@@ -9,7 +9,11 @@
 \set ON_ERROR_STOP on
 SET client_min_messages = warning;
 
+DROP SCHEMA IF EXISTS rospbu CASCADE;
+DROP SCHEMA IF EXISTS sjo CASCADE;
+DROP SCHEMA IF EXISTS gpp CASCADE;
+DROP SCHEMA IF EXISTS app_auth CASCADE;
 DROP SCHEMA IF EXISTS app CASCADE;
-\echo 'Dropped schema app'
+\echo 'Dropped schemas app, app_auth, gpp, sjo, rospbu'
 
 \ir deploy_schema.sql

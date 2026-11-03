@@ -10,10 +10,10 @@ SET client_min_messages = warning;
 BEGIN;
 
 -- ---------------- Applications & route modules ----------------
-INSERT INTO app.applications (code, name, description) VALUES
-    ('GP',     'GP',     'General Payments'),
-    ('sjo',    'SJO',    'SJO Invoice Processing'),
-    ('rospbu', 'ROSPBU', 'ROSPBU Invoice Processing');
+INSERT INTO app.applications (code, name, description, db_schema) VALUES
+    ('GP',     'GP',     'General Payments',          'gpp'),
+    ('sjo',    'SJO',    'SJO Invoice Processing',    'sjo'),
+    ('rospbu', 'ROSPBU', 'ROSPBU Invoice Processing', 'rospbu');
 
 CREATE TEMP TABLE seed_modules (slug text, app_code text, name text, prefix text, pdf_file text, pdf_title text) ON COMMIT DROP;
 INSERT INTO seed_modules VALUES
@@ -36,7 +36,7 @@ INSERT INTO app.app_settings (module_id, enable_notifications, max_invoices_limi
 SELECT id, true, 100 FROM app.app_modules;
 
 -- ---------------- Users ----------------
-INSERT INTO app.users (username, email, name, role, status, auth_provider, password_hash)
+INSERT INTO app_auth.users (username, email, name, role, status, auth_provider, password_hash)
 SELECT u.username, u.email, u.name, u.role, u.status, u.provider,
        CASE WHEN u.provider = 'LOCAL' THEN '$2b$12$A3yomF4wcaww9xkpI2SaAeg1/aZuIfJp1FXSrK4KINCYvOOS/GAiO' END
 FROM (VALUES
@@ -59,7 +59,7 @@ FROM (VALUES
     ('nerina_mejias@cargill.com',    'nerina_mejias@cargill.com',    'Nerina Mejias',    'User', 'Active',    'AD')
 ) AS u (username, email, name, role, status, provider);
 
-INSERT INTO app.user_applications (user_id, application_id)
+INSERT INTO app_auth.user_applications (user_id, application_id)
 SELECT u.id, a.id
 FROM (VALUES
     ('admin@cargill.com', 'GP'), ('admin@cargill.com', 'sjo'), ('admin@cargill.com', 'rospbu'),
@@ -78,7 +78,7 @@ FROM (VALUES
     ('maira_corvalan@cargill.com', 'GP'),
     ('nerina_mejias@cargill.com', 'sjo')
 ) AS x (email, app_code)
-JOIN app.users u        ON u.email = x.email
+JOIN app_auth.users u        ON u.email = x.email
 JOIN app.applications a ON a.code = x.app_code;
 
 -- ---------------- Teams & per-module team members ----------------
@@ -96,7 +96,7 @@ CROSS JOIN (VALUES
     (6, 'Pedro Beltramino', 'pedro_beltramino@cargill.com', 'pbeltramino', 'Support Team')
 ) AS x (ord, name, email, alias, team)
 JOIN app.teams t      ON t.name = x.team
-LEFT JOIN app.users u ON u.email = x.email
+LEFT JOIN app_auth.users u ON u.email = x.email
 ORDER BY m.id, x.ord;
 
 -- ---------------- Vendors & stations ----------------
@@ -111,71 +111,10 @@ INSERT INTO app.country_stations (country_code, station_name) VALUES
     ('ARG', 'Rosario Port'), ('ARG', 'Bahía Blanca'), ('BRA', 'Santos Terminal'),
     ('URU', 'Nueva Palmira'), ('PAR', 'Villeta Dock');
 
--- ---------------- Invoices: 18 per module (same pattern as the UI mock) ----------------
-WITH n AS (SELECT generate_series(0, 17) AS i),
-v AS (SELECT id, (row_number() OVER (ORDER BY id) - 1)::int AS idx FROM app.vendors),
-s AS (SELECT id, (row_number() OVER (ORDER BY id) - 1)::int AS idx FROM app.country_stations),
-st AS (SELECT * FROM (VALUES (0, 'Processed'), (1, 'Pending'), (2, 'Approved'), (3, 'Rejected')) AS t (idx, status))
-INSERT INTO app.invoices
-    (invoice_code, module_id, vendor_id, station_id, invoice_1a, invoice_2a,
-     first_invoice_number, second_invoice_number, invoice_date, expiry_days, invoice_expiry_date,
-     support_team, pre_settlement_number, credit_note,
-     amount, invoice_subtotal, invoice_subtotal_with_tax, status, reception_date, email_reception_date, created_by)
-SELECT
-    'INV-' || m.invoice_prefix || '-' || (1000 + (n.i + 1) * 15),
-    m.id, v.id, s.id,
-    '0001-00045' || (1000 + (n.i + 1) * 15),
-    '0001-00045' || (1000 + (n.i + 1) * 15 + 1),
-    '1', (31 + n.i)::text,
-    DATE '2026-07-02', 15, TIMESTAMPTZ '2026-07-17 18:07:00+00',
-    false, to_char(4131981 + n.i, 'FM9,999,999'), (n.i % 7 = 6),
-    4500 + n.i * 1250, 4500 + n.i * 1250, round((4500 + n.i * 1250) * 1.21, 2),
-    st.status,
-    make_date(2026, 7, 10 + n.i % 20),
-    make_timestamptz(2026, 7, 9 + n.i % 20, 9, 30, 0, 'UTC'),
-    (SELECT id FROM app.users WHERE username = 'admin')
-FROM app.app_modules m
-CROSS JOIN n
-JOIN v  ON v.idx  = n.i % 5
-JOIN s  ON s.idx  = n.i % 5
-JOIN st ON st.idx = n.i % 4
-ORDER BY m.id, n.i;
-
--- Attachments: main invoice PDF + tax certificate + transport manifest (files in backend/storage/attachments)
-INSERT INTO app.invoice_attachments (invoice_id, file_name, title, category, mime_type, size_bytes, storage_path, is_primary)
-SELECT i.id, sm.pdf_file, sm.pdf_title, 'Invoice Document', 'application/pdf', 250880, sm.pdf_file, true
-FROM app.invoices i JOIN app.app_modules m ON m.id = i.module_id JOIN seed_modules sm ON sm.slug = m.slug
-ORDER BY i.id;
-
-INSERT INTO app.invoice_attachments (invoice_id, file_name, title, category, mime_type, size_bytes, storage_path, is_primary)
-SELECT i.id, 'AFIP_CUIT_Voucher_' || upper(m.slug) || '.pdf', 'Tax & CUIT Registration Certificate',
-       'Tax Document', 'application/pdf', 131072, 'sjo-index-processing-invoice.pdf', false
-FROM app.invoices i JOIN app.app_modules m ON m.id = i.module_id
-ORDER BY i.id;
-
-INSERT INTO app.invoice_attachments (invoice_id, file_name, title, category, mime_type, size_bytes, storage_path, is_primary)
-SELECT i.id, 'Receiving_Transport_Manifest_' || upper(m.slug) || '.pdf', 'Receiving & Transport Slip Manifest',
-       'Manifest', 'application/pdf', 319488, 'cbs-go-invoice.pdf', false
-FROM app.invoices i JOIN app.app_modules m ON m.id = i.module_id
-ORDER BY i.id;
-
--- One freight line item per invoice, totals consistent with the invoice header
-INSERT INTO app.invoice_line_items
-    (invoice_id, line_no, code, description, quantity, unit_of_measure, unit_price, discount, subtotal, vat_rate, subtotal_with_vat)
-SELECT i.id, 1, 'CTG ' || (10233259959 + i.id), 'Flete de Maíz ' || sm.pdf_title || ' - 390 Km',
-       30.21, 'toneladas', round(i.amount / 30.21, 2), 0, i.amount, 21.00, i.invoice_subtotal_with_tax
-FROM app.invoices i JOIN app.app_modules m ON m.id = i.module_id JOIN seed_modules sm ON sm.slug = m.slug;
-
--- CCPPs tab
-INSERT INTO app.invoice_ccpps (invoice_id, product, legal_doc_issuer, status, value, km, tons, unit_rate, km_fc, tons_fc)
-SELECT i.id, c.product, c.issuer, c.status, c.value, c.km, c.tons, c.rate, c.km_fc, c.tons_fc
-FROM app.invoices i
-CROSS JOIN (VALUES
-    (1, 'MAIZ DURO',    'PTO SAN MARTIN CEREAL', 'S-Sin Factura', 36.23, 10, 36.16, 9637,  2,   36.23),
-    (2, 'MAIZ DURO',    'EULA MARCOS JUAN',      'S-Sin Factura', 36.80, 0,  36.80, 0,     750, 36.80),
-    (3, 'SOJA PELLETS', 'VICENTIN S.A.I.C.',     'S-Sin Factura', 42.50, 15, 42.00, 10450, 15,  42.50)
-) AS c (ord, product, issuer, status, value, km, tons, rate, km_fc, tons_fc)
-ORDER BY i.id, c.ord;
+-- ---------------- Invoices: one table set per app (generated from common/invoices/templates) ----------------
+\ir gpp/invoices/seed/seed_invoices.sql
+\ir sjo/invoices/seed/seed_invoices.sql
+\ir rospbu/invoices/seed/seed_invoices.sql
 
 COMMIT;
 
@@ -187,11 +126,13 @@ COMMIT;
 
 SELECT 'applications' AS tbl, count(*) AS row_count FROM app.applications
 UNION ALL SELECT 'app_modules', count(*) FROM app.app_modules
-UNION ALL SELECT 'users', count(*) FROM app.users
-UNION ALL SELECT 'invoices', count(*) FROM app.invoices
-UNION ALL SELECT 'invoice_attachments', count(*) FROM app.invoice_attachments
-UNION ALL SELECT 'invoice_ccpps', count(*) FROM app.invoice_ccpps
-UNION ALL SELECT 'invoice_source_emails', count(*) FROM app.invoice_source_emails
+UNION ALL SELECT 'users', count(*) FROM app_auth.users
+UNION ALL SELECT 'gpp_invoices', count(*) FROM gpp.gpp_invoices
+UNION ALL SELECT 'sjo_invoices', count(*) FROM sjo.sjo_invoices
+UNION ALL SELECT 'rospbu_invoices', count(*) FROM rospbu.rospbu_invoices
+UNION ALL SELECT 'invoice_attachments (all apps)', (SELECT count(*) FROM gpp.invoice_attachments) + (SELECT count(*) FROM sjo.invoice_attachments) + (SELECT count(*) FROM rospbu.invoice_attachments)
+UNION ALL SELECT 'invoice_ccpps (gpp)', count(*) FROM gpp.invoice_ccpps
+UNION ALL SELECT 'invoice_source_emails (all apps)', (SELECT count(*) FROM gpp.invoice_source_emails) + (SELECT count(*) FROM sjo.invoice_source_emails) + (SELECT count(*) FROM rospbu.invoice_source_emails)
 UNION ALL SELECT 'countries / states / cities', (SELECT count(*) FROM app.countries) + (SELECT count(*) FROM app.states) + (SELECT count(*) FROM app.cities)
 UNION ALL SELECT 'business_units', count(*) FROM app.business_units
 UNION ALL SELECT 'statuses', count(*) FROM app.statuses

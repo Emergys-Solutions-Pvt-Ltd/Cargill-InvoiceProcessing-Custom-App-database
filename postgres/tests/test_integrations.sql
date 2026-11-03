@@ -18,7 +18,7 @@ CREATE TEMP TABLE t_ctx (k text PRIMARY KEY, v text) ON COMMIT DROP;
 DO $$
 DECLARE
     v_module    integer := (SELECT id FROM app.app_modules WHERE slug = 'GP');
-    v_admin     integer := (SELECT id FROM app.users WHERE username = 'admin');
+    v_admin     integer := (SELECT id FROM app_auth.users WHERE username = 'admin');
     v_int       app.udt_integration_result;
 BEGIN
     ASSERT v_module IS NOT NULL, 'GP module missing (run seed.sql first)';
@@ -140,14 +140,14 @@ BEGIN
         'counters after page 1: ' || row_to_json(v_job_row)::text;
     ASSERT v_job_row.error_count = 3, 'three errors recorded (pre-reject, missing cuit, collision)';
     ASSERT (SELECT watermark FROM app.integration_profiles WHERE id = v_profile) = '2026-07-01T11:00:00Z', 'watermark advanced';
-    ASSERT (SELECT status FROM app.invoices WHERE invoice_code = 'INV-GP-SAP-ZZA-2026') = 'Pending', 'default status';
-    ASSERT (SELECT created_by IS NULL FROM app.invoices WHERE invoice_code = 'INV-GP-SAP-ZZA-2026'), 'system-created invoice';
+    ASSERT (SELECT status FROM gpp.gpp_invoices WHERE invoice_code = 'INV-GP-SAP-ZZA-2026') = 'Pending', 'default status';
+    ASSERT (SELECT created_by IS NULL FROM gpp.gpp_invoices WHERE invoice_code = 'INV-GP-SAP-ZZA-2026'), 'system-created invoice';
 
     -- Replay the same page: nothing new, nothing duplicated
     SELECT string_agg(row_no || '=' || outcome, ',' ORDER BY row_no) INTO v_outcomes
     FROM app.usp_sync_page_apply(v_job, 'worker-a', v_profile, 2, jsonb_path_query_array(v_rows, '$[0 to 1]'), NULL, NULL);
     ASSERT v_outcomes = '1=unchanged,2=unchanged', 'replay is idempotent: ' || v_outcomes;
-    ASSERT (SELECT count(*) FROM app.invoice_external_refs WHERE source_system = 'ZZTEST-100') = 2, 'no duplicate refs';
+    ASSERT (SELECT count(*) FROM gpp.invoice_external_refs WHERE source_system = 'ZZTEST-100') = 2, 'no duplicate refs';
     ASSERT (SELECT watermark FROM app.integration_profiles WHERE id = v_profile) = '2026-07-01T11:00:00Z',
         'NULL watermark keeps the cursor';
 END $$;
@@ -160,7 +160,7 @@ DECLARE
     v_outcomes  text;
 BEGIN
     -- A is being processed (Approved, assigned to a team); B still Pending
-    UPDATE app.invoices SET status = 'Approved', team_id = (SELECT min(id) FROM app.teams)
+    UPDATE gpp.gpp_invoices SET status = 'Approved', team_id = (SELECT min(id) FROM app.teams)
     WHERE invoice_code = 'INV-GP-SAP-ZZA-2026';
 
     SELECT string_agg(row_no || '=' || outcome, ',' ORDER BY row_no) INTO v_outcomes
@@ -173,15 +173,15 @@ BEGIN
             'payload_hash', repeat('2', 64), 'cancelled', true)), NULL, '2026-07-02T09:00:00Z');
     ASSERT v_outcomes = '1=updated,2=updated', 'update outcomes: ' || v_outcomes;
 
-    ASSERT (SELECT amount FROM app.invoices WHERE invoice_code = 'INV-GP-SAP-ZZA-2026') = 150, 'source field updated';
-    ASSERT (SELECT status FROM app.invoices WHERE invoice_code = 'INV-GP-SAP-ZZA-2026') = 'Approved',
+    ASSERT (SELECT amount FROM gpp.gpp_invoices WHERE invoice_code = 'INV-GP-SAP-ZZA-2026') = 150, 'source field updated';
+    ASSERT (SELECT status FROM gpp.gpp_invoices WHERE invoice_code = 'INV-GP-SAP-ZZA-2026') = 'Approved',
         'status of an invoice in processing is never changed';
-    ASSERT (SELECT team_id IS NOT NULL FROM app.invoices WHERE invoice_code = 'INV-GP-SAP-ZZA-2026'), 'workflow field kept';
+    ASSERT (SELECT team_id IS NOT NULL FROM gpp.gpp_invoices WHERE invoice_code = 'INV-GP-SAP-ZZA-2026'), 'workflow field kept';
     ASSERT EXISTS (SELECT 1 FROM app.integration_sync_errors WHERE job_id = v_job AND stage = 'review'
                    AND external_key = '1010/2026/A'), 'review error for cancellation after processing started';
-    ASSERT (SELECT status FROM app.invoices WHERE invoice_code = 'INV-GP-SAP-ZZB-2026') = 'Rejected',
+    ASSERT (SELECT status FROM gpp.gpp_invoices WHERE invoice_code = 'INV-GP-SAP-ZZB-2026') = 'Rejected',
         'pending invoice cancelled in source becomes Rejected';
-    ASSERT (SELECT source_state FROM app.invoice_external_refs WHERE external_key = '1010/2026/B'
+    ASSERT (SELECT source_state FROM gpp.invoice_external_refs WHERE external_key = '1010/2026/B'
             AND source_system = 'ZZTEST-100') = 'cancelled', 'ref marked cancelled';
 END $$;
 
@@ -204,7 +204,7 @@ BEGIN
     ASSERT v_outcomes = '1=created,2=failed', 'persistence failure outcomes: ' || v_outcomes;
     ASSERT (SELECT watermark FROM app.integration_profiles WHERE id = v_profile) = v_before,
         'cursor not advanced past a failed row';
-    ASSERT EXISTS (SELECT 1 FROM app.invoices WHERE invoice_code = 'INV-GP-SAP-ZZG-2026'), 'good row of the page kept';
+    ASSERT EXISTS (SELECT 1 FROM gpp.gpp_invoices WHERE invoice_code = 'INV-GP-SAP-ZZG-2026'), 'good row of the page kept';
     ASSERT EXISTS (SELECT 1 FROM app.integration_sync_errors WHERE job_id = v_job AND stage = 'persistence'
                    AND external_key = '1010/2026/H'), 'persistence error recorded';
 END $$;
@@ -259,7 +259,7 @@ BEGIN
 
     UPDATE app.integration_sync_jobs SET finished_at = now() - interval '400 days' WHERE integration_id = v_int;
     ASSERT (app.usp_integration_purge_history(90)).rows_affected = 2, 'old jobs purged';
-    ASSERT (SELECT count(*) FROM app.invoice_external_refs WHERE source_system = 'ZZTEST-100') = 3, 'refs survive purge';
+    ASSERT (SELECT count(*) FROM gpp.invoice_external_refs WHERE source_system = 'ZZTEST-100') = 3, 'refs survive purge';
 
     -- Deactivating cancels queued work
     v_queued := app.usp_sync_job_enqueue(v_int, 'manual', NULL);
@@ -269,7 +269,7 @@ BEGIN
     ASSERT (SELECT status FROM app.integration_sync_jobs WHERE id = v_queued.id) = 'cancelled', 'deactivation cancels queue';
 
     PERFORM app.usp_integration_delete(v_int);
-    ASSERT (SELECT count(*) FROM app.invoice_external_refs WHERE source_system = 'ZZTEST-100' AND integration_id IS NULL) = 3,
+    ASSERT (SELECT count(*) FROM gpp.invoice_external_refs WHERE source_system = 'ZZTEST-100' AND integration_id IS NULL) = 3,
         'refs kept after integration delete';
 END $$;
 
