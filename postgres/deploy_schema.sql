@@ -131,6 +131,13 @@ END $$;
 \ir rospbu/invoices/migrations/split_from_app_invoices.sql
 \ir common/invoices/migrations/drop_app_invoices.sql
 
+
+-- ---- Mailbox inbox (background email reading, Inbox page) ----
+\ir tables/29_mailboxes.sql
+\ir tables/30_mailbox_emails.sql
+\ir tables/31_mailbox_email_attachments.sql
+
+
 -- ---- Rebuild programmability: functions, views and composite types ----
 DO $$
 DECLARE r record;
@@ -201,6 +208,9 @@ END $$;
 \ir common/integrations/types/udt_sync_row_outcome_result.sql
 \ir common/integrations/types/udt_sync_invoice_apply_result.sql
 \ir common/integrations/types/udt_integration_summary_result.sql
+\ir types/response/udt_mailbox_result.sql
+\ir types/response/udt_mailbox_attachment_result.sql
+\ir types/response/udt_mailbox_email_result.sql
 
 -- ---- Helper functions & views ----
 \ir common/shared/functions/ufn_like_contains.sql
@@ -292,6 +302,17 @@ END $$;
 \ir common/integrations/procedures/usp_sync_job_get.sql
 \ir common/integrations/procedures/usp_sync_error_add.sql
 \ir common/integrations/procedures/usp_sync_error_list.sql
+
+-- ---- Mailbox inbox ----
+\ir procedures/mailbox/usp_mailbox_email_upsert.sql
+\ir procedures/mailbox/usp_mailbox_get_active.sql
+\ir procedures/mailbox/usp_mailbox_attachment_add.sql
+\ir procedures/mailbox/usp_mailbox_attachments_done.sql
+\ir procedures/mailbox/usp_mailbox_set_cursor.sql
+
+
+
+
 
 COMMIT;
 
