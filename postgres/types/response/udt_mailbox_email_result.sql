@@ -7,15 +7,15 @@
 
 -- =====================================================================
 CREATE TYPE app.udt_mailbox_email_result AS (
-    id                  integer,
-    mailbox_id          integer,
+    id                  uuid,
+    mailbox_id          uuid,
     graph_message_id    varchar(500),
     subject             varchar(500),
     from_address        varchar(255),
     received_at         timestamptz(0),
     has_attachments     boolean,
     status              varchar(20),
-    invoice_id          integer,
+    invoice_id          uuid,
     is_new              boolean,
     attachments_pending boolean
 );

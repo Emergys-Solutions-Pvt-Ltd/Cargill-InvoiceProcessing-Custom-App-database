@@ -5,7 +5,7 @@
 -- Response: app.udt_sync_job_result
 -- Errors:   CA404 job not found for the integration, CA409 job already finished
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.usp_sync_job_cancel(p_integration_id integer, p_job_id integer)
+CREATE OR REPLACE FUNCTION app.usp_sync_job_cancel(p_integration_id uuid, p_job_id uuid)
 RETURNS app.udt_sync_job_result
 LANGUAGE plpgsql
 AS $$

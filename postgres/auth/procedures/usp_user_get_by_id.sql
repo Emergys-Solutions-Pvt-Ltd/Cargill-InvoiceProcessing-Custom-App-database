@@ -4,7 +4,7 @@
 -- Response: SETOF app_auth.udt_user_result (no rows when not found)
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app_auth.usp_user_get_by_id(
-    p_user_id       integer,
+    p_user_id       uuid,
     p_active_only   boolean DEFAULT false
 )
 RETURNS SETOF app_auth.udt_user_result

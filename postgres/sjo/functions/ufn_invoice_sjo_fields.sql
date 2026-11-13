@@ -4,7 +4,7 @@
 -- imported by SAP / OnBase have none).
 -- Used by: sjo.usp_invoice_list, sjo.usp_invoice_get_by_code
 -- =====================================================================
-CREATE OR REPLACE FUNCTION sjo.ufn_invoice_sjo_fields(p_invoice_id integer)
+CREATE OR REPLACE FUNCTION sjo.ufn_invoice_sjo_fields(p_invoice_id uuid)
 RETURNS jsonb
 LANGUAGE sql
 STABLE

@@ -3,7 +3,7 @@
 -- Request:  p_integration_id, p_next_run_at (NULL = not scheduled)
 -- Response: app.udt_row_count_result
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.usp_integration_set_next_run(p_integration_id integer, p_next_run_at timestamptz)
+CREATE OR REPLACE FUNCTION app.usp_integration_set_next_run(p_integration_id uuid, p_next_run_at timestamptz)
 RETURNS app.udt_row_count_result
 LANGUAGE sql
 AS $$

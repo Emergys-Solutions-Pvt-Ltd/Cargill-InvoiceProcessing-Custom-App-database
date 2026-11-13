@@ -6,9 +6,9 @@
 -- Errors:   CA404 integration not found
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_integration_set_secret(
-    p_integration_id    integer,
+    p_integration_id    uuid,
     p_secret_ciphertext text,
-    p_user_id           integer
+    p_user_id           uuid
 )
 RETURNS app.udt_row_count_result
 LANGUAGE plpgsql

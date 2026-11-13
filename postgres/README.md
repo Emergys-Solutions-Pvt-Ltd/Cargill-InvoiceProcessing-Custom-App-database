@@ -13,8 +13,15 @@ so these tables (including password hashes) are reachable only through the backe
 
 The auth schema is `app_auth`, not `auth`: Supabase reserves `auth` for Supabase Auth (it has its own
 `auth.users`). Objects reference each other schema-qualified (`app_auth.users`, `gpp.invoice_ccpps`, ...).
-Databases deployed before the split are migrated by `deploy_schema.sql` itself: it moves the module
-tables out of `app` with `ALTER TABLE ... SET SCHEMA` (rows, keys, indexes and identity sequences kept).
+
+**Keys are uuids.** Every table's `id` (and every column that references one) is `uuid DEFAULT
+gen_random_uuid()`; the API and the frontend pass ids around as strings. External ids (SAP / OnBase
+keys, `invoice_code`) are unchanged. Databases deployed with integer keys are converted by
+`deploy_schema.sql` itself through `common/shared/migrations/ids_to_uuid.sql`: it adds uuid columns,
+remaps every foreign key (and the ids inside `integration_profiles.profile_stats`), recreates the
+constraints and indexes, then swaps the columns (so on such a database `id` is the last column).
+It is a no-op once no integer keys remain. Sign-in tokens issued before the conversion carry an
+integer subject and are rejected: users sign in again.
 Master-data lists record their table's schema in `app.master_data_entities.schema_name` (erp-systems: sjo).
 
 ```
@@ -26,12 +33,12 @@ postgres/
                          re-runnable, so it can be applied to an existing database
   auth/                  users, user_applications, usp_user_*, vw_user_summary (sign-in, User Access Management)
   common/                objects every app shares
-    shared/              udt_code_result, udt_row_count_result, ufn_like_contains
+    shared/              udt_code_result, udt_row_count_result, ufn_like_contains; migrations/ids_to_uuid.sql
     apps/                applications, app_modules, app_settings, app_team_members
     master-data/         teams, countries, states, cities, business_units, statuses, processes, registry
     lookups/             usp_lookup_get_all (dropdown sources)
     invoices/            vendors, country_stations, shared invoice result types, templates/ (the per-app
-                         invoice SQL, see below) and migrations/ (one-time split of the old app.invoices)
+                         invoice SQL, see below)
     attachments/         udt_attachment_result (attachment tables are per app)
     integrations/        integrations, profiles, sync jobs / errors, audit log, usp_sync_page_apply
   gpp/                   General Payments: invoices/ (generated), invoice_ccpps + usp_ccpp_*
@@ -128,11 +135,8 @@ its schema.
   when the generated files are out of date). Edit the templates, then regenerate and deploy.
 - **Integrations**: `app.usp_sync_page_apply` keeps the job, counters, errors and watermark and calls
   the profile module's `<app>.usp_sync_invoice_apply` for each row.
-- **Migration**: databases created before the split are migrated by `deploy_schema.sql` itself
-  (`<app>/invoices/migrations/split_from_app_invoices.sql` copies each app's rows keeping ids, then
-  `common/invoices/migrations/drop_app_invoices.sql` checks the counts and drops `app.invoices` and its
-  child tables). It only dropped the foreign key `app.mailbox_emails.fk_mailbox_emails_invoice` of the
-  mailbox tables (not created by these scripts); their owner must point them at the app's table.
+- **Mailbox tables**: `app.mailbox_emails.invoice_id` (uuid) has no foreign key, because an email can
+  belong to an invoice of any app; the per-app `invoice_source_emails` tables hold the real links.
 
 ### Configuration (master data)
 

@@ -17,8 +17,8 @@ CREATE TEMP TABLE t_ctx (k text PRIMARY KEY, v text) ON COMMIT DROP;
 -- ---- Setup: integration with one GP profile ----
 DO $$
 DECLARE
-    v_module    integer := (SELECT id FROM app.app_modules WHERE slug = 'GP');
-    v_admin     integer := (SELECT id FROM app_auth.users WHERE username = 'admin');
+    v_module    uuid    := (SELECT id FROM app.app_modules WHERE slug = 'GP');
+    v_admin     uuid    := (SELECT id FROM app_auth.users WHERE username = 'admin');
     v_int       app.udt_integration_result;
 BEGIN
     ASSERT v_module IS NOT NULL, 'GP module missing (run seed.sql first)';
@@ -73,8 +73,8 @@ END $$;
 -- ---- Queue: one active job per integration, claim, ownership ----
 DO $$
 DECLARE
-    v_int   integer := (SELECT v::integer FROM t_ctx WHERE k = 'int');
-    v_admin integer := (SELECT v::integer FROM t_ctx WHERE k = 'admin');
+    v_int   uuid    := (SELECT v::uuid FROM t_ctx WHERE k = 'int');
+    v_admin uuid    := (SELECT v::uuid FROM t_ctx WHERE k = 'admin');
     v_job   app.udt_sync_job_result;
 BEGIN
     v_job := app.usp_sync_job_enqueue(v_int, 'manual', v_admin);
@@ -106,8 +106,8 @@ END $$;
 -- ---- Page upsert: created, rejected, collision, idempotent replay ----
 DO $$
 DECLARE
-    v_job       integer := (SELECT v::integer FROM t_ctx WHERE k = 'job');
-    v_profile   integer := (SELECT v::integer FROM t_ctx WHERE k = 'profile');
+    v_job       uuid    := (SELECT v::uuid FROM t_ctx WHERE k = 'job');
+    v_profile   uuid    := (SELECT v::uuid FROM t_ctx WHERE k = 'profile');
     v_rows      jsonb;
     v_outcomes  text;
     v_job_row   app.udt_sync_job_result;
@@ -155,12 +155,12 @@ END $$;
 -- ---- Updates: source fields only; cancellation rules ----
 DO $$
 DECLARE
-    v_job       integer := (SELECT v::integer FROM t_ctx WHERE k = 'job');
-    v_profile   integer := (SELECT v::integer FROM t_ctx WHERE k = 'profile');
+    v_job       uuid    := (SELECT v::uuid FROM t_ctx WHERE k = 'job');
+    v_profile   uuid    := (SELECT v::uuid FROM t_ctx WHERE k = 'profile');
     v_outcomes  text;
 BEGIN
     -- A is being processed (Approved, assigned to a team); B still Pending
-    UPDATE gpp.gpp_invoices SET status = 'Approved', team_id = (SELECT min(id) FROM app.teams)
+    UPDATE gpp.gpp_invoices SET status = 'Approved', team_id = (SELECT id FROM app.teams ORDER BY sort_order, name LIMIT 1)
     WHERE invoice_code = 'INV-GP-SAP-ZZA-2026';
 
     SELECT string_agg(row_no || '=' || outcome, ',' ORDER BY row_no) INTO v_outcomes
@@ -188,8 +188,8 @@ END $$;
 -- ---- A row that fails to persist keeps the cursor where it was ----
 DO $$
 DECLARE
-    v_job       integer := (SELECT v::integer FROM t_ctx WHERE k = 'job');
-    v_profile   integer := (SELECT v::integer FROM t_ctx WHERE k = 'profile');
+    v_job       uuid    := (SELECT v::uuid FROM t_ctx WHERE k = 'job');
+    v_profile   uuid    := (SELECT v::uuid FROM t_ctx WHERE k = 'profile');
     v_before    timestamptz := (SELECT watermark FROM app.integration_profiles WHERE id = v_profile);
     v_outcomes  text;
 BEGIN
@@ -212,9 +212,9 @@ END $$;
 -- ---- Finish, history, errors, summary, cancel, cursor reset, purge ----
 DO $$
 DECLARE
-    v_int       integer := (SELECT v::integer FROM t_ctx WHERE k = 'int');
-    v_job       integer := (SELECT v::integer FROM t_ctx WHERE k = 'job');
-    v_profile   integer := (SELECT v::integer FROM t_ctx WHERE k = 'profile');
+    v_int       uuid    := (SELECT v::uuid FROM t_ctx WHERE k = 'int');
+    v_job       uuid    := (SELECT v::uuid FROM t_ctx WHERE k = 'job');
+    v_profile   uuid    := (SELECT v::uuid FROM t_ctx WHERE k = 'profile');
     v_row       app.udt_sync_job_result;
     v_summary   app.udt_integration_summary_result;
     v_queued    app.udt_sync_job_result;

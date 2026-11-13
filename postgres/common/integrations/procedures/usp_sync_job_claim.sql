@@ -9,8 +9,8 @@ RETURNS SETOF app.udt_sync_job_result
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    v_id                integer;
-    v_integration_id    integer;
+    v_id                uuid;
+    v_integration_id    uuid;
 BEGIN
     SELECT j.id, j.integration_id INTO v_id, v_integration_id
     FROM app.integration_sync_jobs j

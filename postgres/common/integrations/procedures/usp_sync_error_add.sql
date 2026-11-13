@@ -3,7 +3,7 @@
 -- Request:  p_job_id, p_profile_id (NULL = whole job), p_errors = JSON array of app.udt_sync_error_input
 -- Response: app.udt_row_count_result
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.usp_sync_error_add(p_job_id integer, p_profile_id integer, p_errors jsonb)
+CREATE OR REPLACE FUNCTION app.usp_sync_error_add(p_job_id uuid, p_profile_id uuid, p_errors jsonb)
 RETURNS app.udt_row_count_result
 LANGUAGE sql
 AS $$

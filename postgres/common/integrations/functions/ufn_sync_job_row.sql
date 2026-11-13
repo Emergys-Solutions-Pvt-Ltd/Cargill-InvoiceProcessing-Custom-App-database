@@ -4,7 +4,7 @@
 -- function and the job history list so the shape is defined once.
 -- Returns NULL when the job does not exist.
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.ufn_sync_job_row(p_job_id integer)
+CREATE OR REPLACE FUNCTION app.ufn_sync_job_row(p_job_id uuid)
 RETURNS app.udt_sync_job_result
 LANGUAGE sql
 STABLE

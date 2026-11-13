@@ -6,8 +6,8 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE gpp.udt_ccpp_result AS (
-    id                      integer,
-    invoice_id              integer,
+    id                      uuid,
+    invoice_id              uuid,
     product                 varchar(100),
     legal_doc_issuer        varchar(200),
     status                  varchar(50),
@@ -29,7 +29,7 @@ CREATE TYPE gpp.udt_ccpp_result AS (
     withholding_code        varchar(255),
     withholding_concept     varchar(255),
     matching                varchar(20),
-    created_by              integer,
+    created_by              uuid,
     created_by_name         varchar(200),
     account                 varchar(20),
     cuit                    varchar(20),
@@ -48,7 +48,7 @@ CREATE TYPE gpp.udt_ccpp_result AS (
     pending_amount          numeric(16,2),
     order_total_amount      numeric(16,2),
     vat                     varchar(100),
-    updated_by              integer,
+    updated_by              uuid,
     updated_by_name         varchar(200),
     line                    numeric(18,0),
     currency                varchar(10),

@@ -15,7 +15,7 @@
 --           CA409 name already used, or the integration was changed by someone else (version)
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_integration_save(
-    p_integration_id    integer,
+    p_integration_id    uuid,
     p_expected_version  integer,
     p_provider_type     text,
     p_name              text,
@@ -32,13 +32,13 @@ CREATE OR REPLACE FUNCTION app.usp_integration_save(
     p_retry_policy      jsonb,
     p_next_run_at       timestamptz,
     p_profiles          jsonb,
-    p_user_id           integer
+    p_user_id           uuid
 )
 RETURNS app.udt_integration_result
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    v_id        integer := p_integration_id;
+    v_id        uuid := p_integration_id;
     v_current   record;
     v_msg       text;
 BEGIN

@@ -5,7 +5,7 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_integration_result AS (
-    id                  integer,
+    id                  uuid,
     provider_type       text,
     name                text,
     description         text,
@@ -24,7 +24,7 @@ CREATE TYPE app.udt_integration_result AS (
     last_attempt_at     timestamptz,
     last_success_at     timestamptz,
     last_status         text,
-    last_job_id         integer,
+    last_job_id         uuid,
     version             integer,
     profiles            jsonb,          -- array of udt_integration_profile_result
     created_at          timestamptz,

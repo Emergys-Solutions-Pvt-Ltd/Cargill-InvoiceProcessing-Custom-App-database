@@ -54,7 +54,7 @@ ORDER BY i.id;
 -- One freight line item per invoice, totals consistent with the invoice header
 INSERT INTO {{S}}.invoice_line_items
     (invoice_id, line_no, code, description, quantity, unit_of_measure, unit_price, discount, subtotal, vat_rate, subtotal_with_vat)
-SELECT i.id, 1, 'CTG ' || (10233259959 + i.id), 'Flete de Maíz ' || sm.pdf_title || ' - 390 Km',
+SELECT i.id, 1, 'CTG ' || (10233259959 + row_number() OVER (ORDER BY i.module_id, i.invoice_code)), 'Flete de Maíz ' || sm.pdf_title || ' - 390 Km',
        30.21, 'toneladas', round(i.amount / 30.21, 2), 0, i.amount, 21.00, i.invoice_subtotal_with_tax
 FROM {{S}}.{{T}} i JOIN app.app_modules m ON m.id = i.module_id JOIN seed_modules sm ON sm.slug = m.slug;
 {{#gpp}}

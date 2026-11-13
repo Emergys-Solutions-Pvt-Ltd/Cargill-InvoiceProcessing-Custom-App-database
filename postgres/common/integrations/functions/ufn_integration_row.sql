@@ -5,7 +5,7 @@
 -- Shared by usp_integration_list / _get / _save / _due_list so the shape is defined once.
 -- Returns NULL when the integration does not exist.
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.ufn_integration_row(p_integration_id integer)
+CREATE OR REPLACE FUNCTION app.ufn_integration_row(p_integration_id uuid)
 RETURNS app.udt_integration_result
 LANGUAGE sql
 STABLE

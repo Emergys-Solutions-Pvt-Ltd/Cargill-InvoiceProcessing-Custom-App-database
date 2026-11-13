@@ -10,10 +10,10 @@
 -- =====================================================================
 CREATE OR REPLACE FUNCTION gpp.usp_ccpp_save(
     p_invoice_code              text,
-    p_user_id                   integer,
+    p_user_id                   uuid,
     p_product                   varchar(100),
     p_status                    varchar(50),
-    p_id                        integer       DEFAULT NULL,
+    p_id                        uuid       DEFAULT NULL,
     p_legal_doc_issuer          varchar(200)  DEFAULT NULL,
     p_value                     numeric(18,2) DEFAULT NULL,
     p_km                        numeric(10,2) DEFAULT NULL,
@@ -76,10 +76,10 @@ RETURNS gpp.udt_ccpp_result
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    v_invoice_id    integer;
+    v_invoice_id    uuid;
     v_product       varchar(100) := nullif(btrim(p_product), '');
     v_status        varchar(50)  := nullif(btrim(p_status), '');
-    v_id            integer;
+    v_id            uuid;
     v_result        gpp.udt_ccpp_result;
 BEGIN
     SELECT i.id INTO v_invoice_id FROM gpp.gpp_invoices i WHERE i.invoice_code = p_invoice_code;

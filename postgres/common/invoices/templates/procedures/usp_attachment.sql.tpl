@@ -27,7 +27,7 @@ RETURNS app.udt_attachment_result
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    v_invoice_id    integer;
+    v_invoice_id    uuid;
     v_app_code      text;
     v_result        app.udt_attachment_result;
 BEGIN
@@ -59,7 +59,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION {{S}}.usp_attachment_get_by_id(p_attachment_id integer)
+CREATE OR REPLACE FUNCTION {{S}}.usp_attachment_get_by_id(p_attachment_id uuid)
 RETURNS SETOF app.udt_attachment_result
 LANGUAGE sql
 STABLE
@@ -73,7 +73,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION {{S}}.usp_attachment_list_by_provider(
     p_storage_provider  text,
-    p_after_id          integer DEFAULT 0,
+    p_after_id          uuid DEFAULT NULL,
     p_limit             integer DEFAULT 100
 )
 RETURNS SETOF app.udt_attachment_result
@@ -84,7 +84,7 @@ AS $$
            att.storage_path, att.is_primary, att.uploaded_at, '{{CODE}}'::varchar,
            att.storage_provider, att.storage_bucket, att.content_sha256
     FROM {{S}}.invoice_attachments att
-    WHERE att.storage_provider = p_storage_provider AND att.id > coalesce(p_after_id, 0)
+    WHERE att.storage_provider = p_storage_provider AND (p_after_id IS NULL OR att.id > p_after_id)
     ORDER BY att.id
     LIMIT least(greatest(coalesce(p_limit, 100), 1), 500);
 $$;
@@ -92,7 +92,7 @@ $$;
 -- Only moves a row that is still where the caller expects it, so concurrent / repeated migrations
 -- cannot overwrite each other. Response: rows_affected 0 = already moved or not found.
 CREATE OR REPLACE FUNCTION {{S}}.usp_attachment_set_storage(
-    p_attachment_id     integer,
+    p_attachment_id     uuid,
     p_expected_provider text,
     p_storage_provider  text,
     p_storage_bucket    text,

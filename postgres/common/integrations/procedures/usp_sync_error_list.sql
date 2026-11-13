@@ -5,7 +5,7 @@
 -- Errors:   CA400 invalid page size
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_sync_error_list(
-    p_job_id    integer,
+    p_job_id    uuid,
     p_stage     text    DEFAULT NULL,
     p_page      integer DEFAULT 1,
     p_page_size integer DEFAULT 20

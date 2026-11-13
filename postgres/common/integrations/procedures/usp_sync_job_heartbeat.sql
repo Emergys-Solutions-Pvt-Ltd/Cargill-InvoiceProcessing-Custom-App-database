@@ -4,7 +4,7 @@
 -- Response: app.udt_sync_job_result (cancel_requested tells the worker to stop safely)
 -- Errors:   CA409 the job is no longer running for this worker (recovered as stale, or finished)
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.usp_sync_job_heartbeat(p_job_id integer, p_worker_id text)
+CREATE OR REPLACE FUNCTION app.usp_sync_job_heartbeat(p_job_id uuid, p_worker_id text)
 RETURNS app.udt_sync_job_result
 LANGUAGE plpgsql
 AS $$

@@ -5,9 +5,9 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_integration_profile_result AS (
-    id                      integer,
-    integration_id          integer,
-    module_id               integer,
+    id                      uuid,
+    integration_id          uuid,
+    module_id               uuid,
     module_slug             text,
     module_name             text,
     application_code        text,

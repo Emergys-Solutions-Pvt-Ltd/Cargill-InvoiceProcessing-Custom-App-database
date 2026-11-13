@@ -13,7 +13,7 @@ RETURNS app.udt_master_data_option_result
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    v_invoice_id    integer;
+    v_invoice_id    uuid;
     v_current       app.teams;
     v_previous      app.teams;
 BEGIN

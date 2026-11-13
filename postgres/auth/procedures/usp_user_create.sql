@@ -20,7 +20,7 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
     v_unknown   text;
-    v_id        integer;
+    v_id        uuid;
     v_result    app_auth.udt_user_result;
 BEGIN
     IF p_role NOT IN ('Admin', 'User') THEN

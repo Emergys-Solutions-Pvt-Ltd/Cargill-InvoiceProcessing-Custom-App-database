@@ -6,7 +6,7 @@
 -- Errors:   CA400 invalid page size, CA404 integration not found
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_sync_job_list(
-    p_integration_id    integer,
+    p_integration_id    uuid,
     p_status            text        DEFAULT NULL,
     p_trigger_type      text        DEFAULT NULL,
     p_from              timestamptz DEFAULT NULL,

@@ -4,7 +4,7 @@
 -- Response: app.udt_app_settings_result - always one row; defaults
 --           (notifications on, limit 100) when the module has no settings row yet
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.usp_app_settings_get(p_module_id integer)
+CREATE OR REPLACE FUNCTION app.usp_app_settings_get(p_module_id uuid)
 RETURNS app.udt_app_settings_result
 LANGUAGE sql
 STABLE

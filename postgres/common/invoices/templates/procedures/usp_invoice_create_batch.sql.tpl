@@ -22,8 +22,8 @@
 --                 max_invoices_limit (app.app_settings) would be exceeded
 -- =====================================================================
 CREATE OR REPLACE FUNCTION {{S}}.usp_invoice_create_batch(
-    p_module_id     integer,
-    p_created_by    integer,
+    p_module_id     uuid,
+    p_created_by    uuid,
     p_invoices      jsonb
 )
 RETURNS SETOF app.udt_code_result
@@ -34,7 +34,7 @@ DECLARE
     v_count         integer;
     v_limit         integer;
     v_created_today integer;
-    v_app_id        integer;
+    v_app_id        uuid;
     v_schema        text;
 BEGIN
     CREATE TEMP TABLE IF NOT EXISTS tmp_{{S}}_invoice_input OF {{S}}.udt_invoice_input ON COMMIT DROP;
@@ -120,7 +120,7 @@ BEGIN
 {{#sjo}}
     -- SJO lists: country / BU / ERP by code or name (active items only)
     CREATE TEMP TABLE IF NOT EXISTS tmp_sjo_invoice_refs (
-        row_no integer PRIMARY KEY, country_id integer, business_unit_id integer, erp_system_id integer
+        row_no integer PRIMARY KEY, country_id uuid, business_unit_id uuid, erp_system_id uuid
     ) ON COMMIT DROP;
     TRUNCATE tmp_sjo_invoice_refs;
     INSERT INTO tmp_sjo_invoice_refs

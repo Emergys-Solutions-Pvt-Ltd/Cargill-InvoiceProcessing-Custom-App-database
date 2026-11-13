@@ -5,8 +5,8 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_mailbox_attachment_result AS (
-    id                  integer,
-    mailbox_email_id    integer,
+    id                  uuid,
+    mailbox_email_id    uuid,
     file_name           varchar(255),
     mime_type           varchar(100),
     size_bytes          bigint,

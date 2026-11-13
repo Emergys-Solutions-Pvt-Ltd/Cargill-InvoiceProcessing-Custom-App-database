@@ -10,7 +10,7 @@
 CREATE OR REPLACE FUNCTION app.usp_master_data_list(
     p_entity            text,
     p_search            text    DEFAULT NULL,
-    p_parent_id         integer DEFAULT NULL,
+    p_parent_id         uuid DEFAULT NULL,
     p_include_inactive  boolean DEFAULT true,
     p_page              integer DEFAULT 1,
     p_page_size         integer DEFAULT 10
@@ -35,7 +35,7 @@ BEGIN
                     count(*) OVER ()::integer AS total
              FROM base b
              WHERE ($1::text IS NULL OR b.name ILIKE $1 OR b.code ILIKE $1 OR b.description ILIKE $1)
-               AND ($2::integer IS NULL OR b.parent_id = $2)
+               AND ($2::uuid IS NULL OR b.parent_id = $2)
                AND ($3 OR b.is_active)
          ),
          paging AS (

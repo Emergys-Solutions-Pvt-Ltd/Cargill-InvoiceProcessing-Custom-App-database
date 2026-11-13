@@ -4,7 +4,7 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_vendor_result AS (
-    id            integer,
+    id            uuid,
     legal_name    varchar(255),
     cuit          varchar(20)
 );

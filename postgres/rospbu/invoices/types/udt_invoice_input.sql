@@ -19,5 +19,5 @@ CREATE TYPE rospbu.udt_invoice_input AS (
     status                  varchar(20),
     reception_date          date,
     email_reception_date    timestamptz(0),
-    assigned_user_id        integer
+    assigned_user_id        uuid
 );

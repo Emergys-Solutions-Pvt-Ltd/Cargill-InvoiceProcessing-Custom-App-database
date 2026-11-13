@@ -5,7 +5,7 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_integration_summary_result AS (
-    integration_id      integer,
+    integration_id      uuid,
     last_status         text,
     last_attempt_at     timestamptz,
     last_success_at     timestamptz,
