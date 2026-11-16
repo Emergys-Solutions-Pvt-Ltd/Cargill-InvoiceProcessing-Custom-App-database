@@ -7,7 +7,7 @@
 --            app assignments are removed with the user.
 -- Errors:   CA400 deleting your own account, CA404 user not found
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app_auth.usp_user_delete(p_user_id integer, p_deleted_by integer)
+CREATE OR REPLACE FUNCTION app_auth.usp_user_delete(p_user_id uuid, p_deleted_by uuid)
 RETURNS app.udt_row_count_result
 LANGUAGE plpgsql
 AS $$

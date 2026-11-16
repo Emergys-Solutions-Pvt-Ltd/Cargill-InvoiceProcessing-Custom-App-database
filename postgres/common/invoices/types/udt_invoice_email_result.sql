@@ -5,7 +5,7 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_invoice_email_result AS (
-    id              integer,
+    id              uuid,
     message_id      varchar(255),
     from_name       varchar(150),
     from_address    varchar(255),

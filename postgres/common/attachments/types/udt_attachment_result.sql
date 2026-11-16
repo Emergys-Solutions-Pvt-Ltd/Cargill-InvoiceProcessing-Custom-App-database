@@ -5,8 +5,8 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_attachment_result AS (
-    id                  integer,
-    invoice_id          integer,
+    id                  uuid,
+    invoice_id          uuid,
     file_name           varchar(255),
     title               varchar(255),
     category            varchar(50),

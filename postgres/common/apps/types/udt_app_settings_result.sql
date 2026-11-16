@@ -4,7 +4,7 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_app_settings_result AS (
-    module_id               integer,
+    module_id               uuid,
     enable_notifications    boolean,
     max_invoices_limit      integer,
     updated_at              timestamptz(0)

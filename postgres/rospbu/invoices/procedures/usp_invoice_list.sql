@@ -8,7 +8,7 @@
 -- Errors:   CA400 invalid page size
 -- =====================================================================
 CREATE OR REPLACE FUNCTION rospbu.usp_invoice_list(
-    p_module_id     integer,
+    p_module_id     uuid,
     p_search        text    DEFAULT NULL,
     p_status        text    DEFAULT 'ALL',
     p_page          integer DEFAULT 1,

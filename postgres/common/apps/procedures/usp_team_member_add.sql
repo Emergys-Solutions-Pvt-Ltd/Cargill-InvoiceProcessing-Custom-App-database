@@ -6,7 +6,7 @@
 -- Errors:   CA400 unknown team, CA404 unknown module, CA409 email already on this module
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_team_member_add(
-    p_module_id integer,
+    p_module_id uuid,
     p_name      text,
     p_email     text,
     p_alias     text DEFAULT NULL,
@@ -16,7 +16,7 @@ RETURNS app.udt_team_member_result
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    v_team_id   integer;
+    v_team_id   uuid;
     v_result    app.udt_team_member_result;
 BEGIN
     SELECT id INTO v_team_id FROM app.teams WHERE name = p_team AND is_active;

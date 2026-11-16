@@ -28,7 +28,7 @@ BEGIN
         'SELECT t.id, t.code::varchar(30), t.name::varchar(150), t.description::varchar(500), '
         || '%s AS parent_id, %s AS parent_name, %s AS color, t.sort_order, t.is_active, t.updated_at '
         || 'FROM %I.%I t %s',
-        CASE WHEN v_def.parent_column IS NULL THEN 'NULL::integer' ELSE format('t.%I', v_def.parent_column) END,
+        CASE WHEN v_def.parent_column IS NULL THEN 'NULL::uuid' ELSE format('t.%I', v_def.parent_column) END,
         CASE WHEN v_parent_table IS NULL THEN 'NULL::varchar(150)' ELSE 'p.name::varchar(150)' END,
         CASE WHEN v_def.has_color THEN 't.color::varchar(20)' ELSE 'NULL::varchar(20)' END,
         v_def.schema_name, v_def.table_name,

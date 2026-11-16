@@ -3,7 +3,7 @@
 -- Request:  p_integration_id, p_days (period for the totals, default 30)
 -- Response: SETOF app.udt_integration_summary_result (no row when not found)
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.usp_integration_summary(p_integration_id integer, p_days integer DEFAULT 30)
+CREATE OR REPLACE FUNCTION app.usp_integration_summary(p_integration_id uuid, p_days integer DEFAULT 30)
 RETURNS SETOF app.udt_integration_summary_result
 LANGUAGE sql
 STABLE

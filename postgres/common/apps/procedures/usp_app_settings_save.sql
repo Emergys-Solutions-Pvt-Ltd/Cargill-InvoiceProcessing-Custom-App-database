@@ -6,10 +6,10 @@
 -- Errors:   CA400 negative limit, CA404 unknown module
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_app_settings_save(
-    p_module_id             integer,
+    p_module_id             uuid,
     p_enable_notifications  boolean DEFAULT NULL,
     p_max_invoices_limit    integer DEFAULT NULL,
-    p_updated_by            integer DEFAULT NULL
+    p_updated_by            uuid DEFAULT NULL
 )
 RETURNS app.udt_app_settings_result
 LANGUAGE plpgsql

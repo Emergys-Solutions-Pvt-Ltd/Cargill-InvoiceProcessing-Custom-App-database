@@ -5,8 +5,8 @@
 -- Response: app.udt_row_count_result
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_integration_audit_add(
-    p_integration_id    integer,
-    p_actor_user_id     integer,
+    p_integration_id    uuid,
+    p_actor_user_id     uuid,
     p_action            text,
     p_details           jsonb
 )

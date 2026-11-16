@@ -5,6 +5,6 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_integration_secret_result AS (
-    integration_id      integer,
+    integration_id      uuid,
     secret_ciphertext   text
 );

@@ -3,7 +3,7 @@
 -- <db_schema>.invoice_external_refs (apps from app.applications.db_schema).
 -- Used by: usp_integration_summary
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.ufn_external_ref_count(p_integration_id integer)
+CREATE OR REPLACE FUNCTION app.ufn_external_ref_count(p_integration_id uuid)
 RETURNS integer
 LANGUAGE plpgsql
 STABLE

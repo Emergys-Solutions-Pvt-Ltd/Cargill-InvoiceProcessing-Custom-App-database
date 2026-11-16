@@ -9,7 +9,7 @@
 -- Errors:   CA404 mailbox not found
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_mailbox_set_cursor(
-    p_mailbox_id    integer,
+    p_mailbox_id    uuid,
     p_delta_link    text,
     p_error         text,
     p_reset         boolean DEFAULT false

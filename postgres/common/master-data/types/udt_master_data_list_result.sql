@@ -4,11 +4,11 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_master_data_list_result AS (
-    id              integer,
+    id              uuid,
     code            varchar(30),
     name            varchar(150),
     description     varchar(500),
-    parent_id       integer,
+    parent_id       uuid,
     parent_name     varchar(150),
     color           varchar(20),
     sort_order      integer,

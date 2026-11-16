@@ -6,7 +6,7 @@
 -- Errors:   CA400 invalid page size
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_team_member_list(
-    p_module_id     integer,
+    p_module_id     uuid,
     p_team          text    DEFAULT 'ALL',
     p_search        text    DEFAULT NULL,
     p_page          integer DEFAULT 1,

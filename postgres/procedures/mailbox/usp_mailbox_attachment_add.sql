@@ -8,7 +8,7 @@
 -- Errors:   CA404 email not found
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_mailbox_attachment_add(
-    p_mailbox_email_id      integer,
+    p_mailbox_email_id      uuid,
     p_graph_attachment_id   text,
     p_file_name             text,
     p_mime_type             text,

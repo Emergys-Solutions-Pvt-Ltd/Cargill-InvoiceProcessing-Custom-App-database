@@ -3,7 +3,7 @@
 -- Request:  p_integration_id
 -- Response: SETOF app.udt_integration_result (no row when not found)
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.usp_integration_get(p_integration_id integer)
+CREATE OR REPLACE FUNCTION app.usp_integration_get(p_integration_id uuid)
 RETURNS SETOF app.udt_integration_result
 LANGUAGE sql
 STABLE

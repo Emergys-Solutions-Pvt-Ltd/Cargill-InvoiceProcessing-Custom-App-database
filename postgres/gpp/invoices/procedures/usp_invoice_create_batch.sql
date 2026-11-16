@@ -19,8 +19,8 @@
 --                 max_invoices_limit (app.app_settings) would be exceeded
 -- =====================================================================
 CREATE OR REPLACE FUNCTION gpp.usp_invoice_create_batch(
-    p_module_id     integer,
-    p_created_by    integer,
+    p_module_id     uuid,
+    p_created_by    uuid,
     p_invoices      jsonb
 )
 RETURNS SETOF app.udt_code_result
@@ -31,7 +31,7 @@ DECLARE
     v_count         integer;
     v_limit         integer;
     v_created_today integer;
-    v_app_id        integer;
+    v_app_id        uuid;
     v_schema        text;
 BEGIN
     CREATE TEMP TABLE IF NOT EXISTS tmp_gpp_invoice_input OF gpp.udt_invoice_input ON COMMIT DROP;

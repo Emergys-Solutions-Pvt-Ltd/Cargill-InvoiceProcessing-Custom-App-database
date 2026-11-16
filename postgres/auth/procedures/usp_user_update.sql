@@ -9,7 +9,7 @@
 --           CA409 email already used by another user
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app_auth.usp_user_update(
-    p_user_id   integer,
+    p_user_id   uuid,
     p_name      text    DEFAULT NULL,
     p_role      text    DEFAULT NULL,
     p_status    text    DEFAULT NULL,

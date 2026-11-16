@@ -10,11 +10,11 @@
 -- Errors:   CA409 the invoice id is already used by another ROSPBU invoice (caller records 'rejected')
 -- =====================================================================
 CREATE OR REPLACE FUNCTION rospbu.usp_sync_invoice_apply(
-    p_job_id            integer,
-    p_profile_id        integer,
-    p_integration_id    integer,
+    p_job_id            uuid,
+    p_profile_id        uuid,
+    p_integration_id    uuid,
     p_source_system     text,
-    p_module_id         integer,
+    p_module_id         uuid,
     p_default_status    text,
     p_cancel_status     text,
     p_cancellable       text[],
@@ -26,8 +26,8 @@ AS $$
 DECLARE
     r               app.udt_external_invoice_input := p_row;
     v_ref           record;
-    v_vendor_id     integer;
-    v_invoice_id    integer;
+    v_vendor_id     uuid;
+    v_invoice_id    uuid;
     v_msg           text;
     v_review        boolean := false;
 BEGIN

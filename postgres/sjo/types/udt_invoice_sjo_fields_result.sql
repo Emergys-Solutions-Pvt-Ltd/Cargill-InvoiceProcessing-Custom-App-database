@@ -5,13 +5,13 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE sjo.udt_invoice_sjo_fields_result AS (
-    country_id          integer,
+    country_id          uuid,
     country_code        varchar(30),
     country_name        varchar(150),
-    business_unit_id    integer,
+    business_unit_id    uuid,
     business_unit_code  varchar(30),
     business_unit_name  varchar(150),
-    erp_system_id       integer,
+    erp_system_id       uuid,
     erp_system_code     varchar(30),
     erp_system_name     varchar(150),
     id_fiscal           varchar(30),

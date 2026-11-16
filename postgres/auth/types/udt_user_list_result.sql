@@ -4,7 +4,7 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app_auth.udt_user_list_result AS (
-    id               integer,
+    id               uuid,
     username         varchar(150),
     name             varchar(200),
     email            varchar(255),

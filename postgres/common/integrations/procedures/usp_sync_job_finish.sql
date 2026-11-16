@@ -6,7 +6,7 @@
 -- Errors:   CA400 invalid status, CA409 job not running for this worker
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_sync_job_finish(
-    p_job_id        integer,
+    p_job_id        uuid,
     p_worker_id     text,
     p_status        text,
     p_error_summary text
@@ -15,7 +15,7 @@ RETURNS app.udt_sync_job_result
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    v_integration_id integer;
+    v_integration_id uuid;
 BEGIN
     IF p_status NOT IN ('succeeded', 'partially_succeeded', 'failed', 'cancelled') THEN
         RAISE EXCEPTION 'Invalid final status %.', p_status USING ERRCODE = 'CA400';

@@ -6,7 +6,7 @@
 -- Response: app.udt_row_count_result
 -- Errors:   CA404 profile not found, CA409 a synchronization is running
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.usp_integration_profile_reset_cursor(p_integration_id integer, p_profile_id integer)
+CREATE OR REPLACE FUNCTION app.usp_integration_profile_reset_cursor(p_integration_id uuid, p_profile_id uuid)
 RETURNS app.udt_row_count_result
 LANGUAGE plpgsql
 AS $$

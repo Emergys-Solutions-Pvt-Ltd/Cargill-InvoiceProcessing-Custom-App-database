@@ -10,11 +10,11 @@
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_master_data_save(
     p_entity        text,
-    p_id            integer DEFAULT NULL,
+    p_id            uuid DEFAULT NULL,
     p_code          text    DEFAULT NULL,
     p_name          text    DEFAULT NULL,
     p_description   text    DEFAULT NULL,
-    p_parent_id     integer DEFAULT NULL,
+    p_parent_id     uuid DEFAULT NULL,
     p_color         text    DEFAULT NULL,
     p_sort_order    integer DEFAULT 0,
     p_is_active     boolean DEFAULT true
@@ -30,7 +30,7 @@ DECLARE
     v_description   text := nullif(btrim(p_description), '');
     v_color         text := lower(nullif(btrim(p_color), ''));
     v_exists        boolean;
-    v_id            integer;
+    v_id            uuid;
     v_set_extra     text := '';
     v_cols_extra    text := '';
     v_vals_extra    text := '';

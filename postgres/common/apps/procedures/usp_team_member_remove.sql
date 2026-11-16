@@ -3,7 +3,7 @@
 -- Request:  p_module_id, p_member_ids; ids belonging to another module are ignored
 -- Response: app.udt_row_count_result (members removed)
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.usp_team_member_remove(p_module_id integer, p_member_ids integer[])
+CREATE OR REPLACE FUNCTION app.usp_team_member_remove(p_module_id uuid, p_member_ids uuid[])
 RETURNS app.udt_row_count_result
 LANGUAGE plpgsql
 AS $$

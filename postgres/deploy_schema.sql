@@ -38,45 +38,8 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA gpp    REVOKE EXECUTE ON FUNCTIONS FROM PUBLI
 ALTER DEFAULT PRIVILEGES IN SCHEMA sjo    REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 ALTER DEFAULT PRIVILEGES IN SCHEMA rospbu REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 
--- ---- One-time move of module tables created in schema app by earlier versions ----
--- ALTER TABLE ... SET SCHEMA keeps rows, keys, indexes, constraints and identity sequences.
-DO $$
-DECLARE r record;
-BEGIN
-    FOR r IN SELECT * FROM (VALUES
-        ('users', 'app_auth'),
-        ('user_applications', 'app_auth'),
-        ('invoice_ccpps', 'gpp'),
-        ('invoice_sf_fields', 'gpp'),
-        ('erp_systems', 'sjo'),
-        ('invoice_sjo_fields', 'sjo')
-    ) AS v (table_name, target_schema)
-    LOOP
-        IF to_regclass(format('app.%I', r.table_name)) IS NOT NULL
-           AND to_regclass(format('%I.%I', r.target_schema, r.table_name)) IS NULL THEN
-            EXECUTE format('ALTER TABLE app.%I SET SCHEMA %I', r.table_name, r.target_schema);
-        END IF;
-    END LOOP;
-END $$;
-
--- ---- One-time invoice split (see the migrations below): lock everything it rewrites up front, so
--- running API / worker instances simply wait for this transaction instead of deadlocking with it ----
-DO $$
-DECLARE v_table text;
-BEGIN
-    IF to_regclass('app.invoices') IS NULL THEN
-        RETURN;
-    END IF;
-    FOREACH v_table IN ARRAY ARRAY['app.applications', 'app.app_modules', 'app.integrations', 'app.integration_profiles',
-                                   'app.integration_sync_jobs', 'app.invoices', 'app.invoice_attachments',
-                                   'app.invoice_line_items', 'app.invoice_source_emails', 'app.invoice_external_refs',
-                                   'gpp.invoice_ccpps', 'gpp.invoice_sf_fields', 'sjo.invoice_sjo_fields']
-    LOOP
-        IF to_regclass(v_table) IS NOT NULL THEN
-            EXECUTE format('LOCK TABLE %s IN ACCESS EXCLUSIVE MODE', v_table);
-        END IF;
-    END LOOP;
-END $$;
+-- ---- One-time conversion of integer keys to uuid (no-op once converted / on fresh databases) ----
+\ir common/shared/migrations/ids_to_uuid.sql
 
 -- ---- Tables (dependency order) ----
 \ir auth/tables/01_users.sql
@@ -124,12 +87,6 @@ END $$;
 \ir rospbu/invoices/tables/43_invoice_attachments.sql
 \ir rospbu/invoices/tables/44_invoice_external_refs.sql
 \ir gpp/tables/45_invoice_ccpps.sql
-
--- ---- One-time move of the former common app.invoices tables into the app tables (no-op afterwards) ----
-\ir gpp/invoices/migrations/split_from_app_invoices.sql
-\ir sjo/invoices/migrations/split_from_app_invoices.sql
-\ir rospbu/invoices/migrations/split_from_app_invoices.sql
-\ir common/invoices/migrations/drop_app_invoices.sql
 
 
 -- ---- Mailbox inbox (background email reading, Inbox page) ----

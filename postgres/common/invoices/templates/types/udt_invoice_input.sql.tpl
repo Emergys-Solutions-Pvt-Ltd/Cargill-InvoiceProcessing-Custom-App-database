@@ -21,7 +21,7 @@ CREATE TYPE {{S}}.udt_invoice_input AS (
     status                  varchar(20),
     reception_date          date,
     email_reception_date    timestamptz(0),
-    assigned_user_id        integer{{#sjo}},             -- "Assign To"
+    assigned_user_id        uuid{{#sjo}},             -- "Assign To"
     sjo_country             varchar(150),
     sjo_business_unit       varchar(150),
     sjo_erp                 varchar(150),

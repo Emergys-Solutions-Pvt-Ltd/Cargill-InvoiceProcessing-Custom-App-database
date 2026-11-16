@@ -4,11 +4,11 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_app_module_result AS (
-    module_id           integer,
+    module_id           uuid,
     slug                varchar(100),
     name                varchar(150),
     invoice_prefix      varchar(30),
-    application_id      integer,
+    application_id      uuid,
     application_code    varchar(50),
     db_schema           varchar(63)       -- schema of the app's invoice tables (gpp, sjo, rospbu)
 );

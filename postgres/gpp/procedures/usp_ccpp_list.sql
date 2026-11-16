@@ -10,7 +10,7 @@ LANGUAGE plpgsql
 STABLE
 AS $$
 DECLARE
-    v_invoice_id integer;
+    v_invoice_id uuid;
 BEGIN
     SELECT i.id INTO v_invoice_id FROM gpp.gpp_invoices i WHERE i.invoice_code = p_invoice_code;
     IF v_invoice_id IS NULL THEN

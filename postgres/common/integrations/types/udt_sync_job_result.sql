@@ -5,16 +5,16 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_sync_job_result AS (
-    id                  integer,
-    integration_id      integer,
+    id                  uuid,
+    integration_id      uuid,
     integration_name    text,
     trigger_type        text,
-    requested_by        integer,
+    requested_by        uuid,
     requested_by_name   text,
     status              text,
     attempt             integer,
     max_attempts        integer,
-    retry_of_job_id     integer,
+    retry_of_job_id     uuid,
     run_after           timestamptz,
     started_at          timestamptz,
     finished_at         timestamptz,

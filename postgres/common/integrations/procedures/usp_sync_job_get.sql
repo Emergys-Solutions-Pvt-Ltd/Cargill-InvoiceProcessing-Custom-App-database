@@ -3,7 +3,7 @@
 -- Request:  p_integration_id, p_job_id
 -- Response: SETOF app.udt_sync_job_result (no row when not found)
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.usp_sync_job_get(p_integration_id integer, p_job_id integer)
+CREATE OR REPLACE FUNCTION app.usp_sync_job_get(p_integration_id uuid, p_job_id uuid)
 RETURNS SETOF app.udt_sync_job_result
 LANGUAGE sql
 STABLE

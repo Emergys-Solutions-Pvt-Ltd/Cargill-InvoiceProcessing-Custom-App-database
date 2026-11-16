@@ -3,7 +3,7 @@
 -- Request:  p_user_id
 -- Response: app.udt_row_count_result
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app_auth.usp_user_touch_last_login(p_user_id integer)
+CREATE OR REPLACE FUNCTION app_auth.usp_user_touch_last_login(p_user_id uuid)
 RETURNS app.udt_row_count_result
 LANGUAGE plpgsql
 AS $$

@@ -5,11 +5,11 @@
 -- existing databases up to date. Run through deploy_schema.sql.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.app_settings (
-    module_id               integer         NOT NULL CONSTRAINT pk_app_settings PRIMARY KEY
+    module_id               uuid         NOT NULL CONSTRAINT pk_app_settings PRIMARY KEY
                                             CONSTRAINT fk_app_settings_module REFERENCES app.app_modules (id) ON DELETE CASCADE,
     enable_notifications    boolean         NOT NULL DEFAULT true,
     max_invoices_limit      integer         NOT NULL DEFAULT 100 CONSTRAINT ck_app_settings_max CHECK (max_invoices_limit >= 0),
-    updated_by              integer         NULL CONSTRAINT fk_app_settings_user REFERENCES app_auth.users (id),
+    updated_by              uuid         NULL CONSTRAINT fk_app_settings_user REFERENCES app_auth.users (id),
     updated_at              timestamptz(0)  NOT NULL DEFAULT now()
 );
 

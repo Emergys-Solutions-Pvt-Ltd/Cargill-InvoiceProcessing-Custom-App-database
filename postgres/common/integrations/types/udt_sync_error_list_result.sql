@@ -5,9 +5,9 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_sync_error_list_result AS (
-    id              bigint,
-    job_id          integer,
-    profile_id      integer,
+    id              uuid,
+    job_id          uuid,
+    profile_id      uuid,
     profile_name    text,
     stage           text,
     external_key    text,

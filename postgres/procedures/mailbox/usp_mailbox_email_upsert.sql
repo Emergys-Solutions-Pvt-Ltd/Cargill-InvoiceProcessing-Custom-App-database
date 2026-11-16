@@ -8,7 +8,7 @@
 -- Errors:   CA404 mailbox not found
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_mailbox_email_upsert(
-    p_mailbox_id            integer,
+    p_mailbox_id            uuid,
     p_graph_message_id      text,
     p_internet_message_id   text,
     p_from_name             text,

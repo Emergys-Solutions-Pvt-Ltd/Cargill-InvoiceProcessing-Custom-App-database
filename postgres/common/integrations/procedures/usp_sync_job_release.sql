@@ -4,12 +4,12 @@
 -- Request:  p_job_id, p_worker_id
 -- Response: app.udt_row_count_result (0 when the job was no longer owned by this worker)
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.usp_sync_job_release(p_job_id integer, p_worker_id text)
+CREATE OR REPLACE FUNCTION app.usp_sync_job_release(p_job_id uuid, p_worker_id text)
 RETURNS app.udt_row_count_result
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    v_integration_id integer;
+    v_integration_id uuid;
 BEGIN
     UPDATE app.integration_sync_jobs
     SET status = 'queued', worker_id = NULL, heartbeat_at = NULL, run_after = now()

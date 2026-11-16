@@ -8,7 +8,7 @@
 -- Response: app.udt_row_count_result
 -- Errors:   CA404 email not found
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.usp_mailbox_attachments_done(p_mailbox_email_id integer, p_error text DEFAULT NULL)
+CREATE OR REPLACE FUNCTION app.usp_mailbox_attachments_done(p_mailbox_email_id uuid, p_error text DEFAULT NULL)
 RETURNS app.udt_row_count_result
 LANGUAGE plpgsql
 AS $$

@@ -11,20 +11,20 @@
 -- =====================================================================
 CREATE OR REPLACE FUNCTION {{S}}.usp_invoice_update_details(
     p_invoice_code          text,
-    p_process_id            integer DEFAULT NULL,
-    p_origin_city_id        integer DEFAULT NULL,
-    p_destination_city_id   integer DEFAULT NULL,
+    p_process_id            uuid DEFAULT NULL,
+    p_origin_city_id        uuid DEFAULT NULL,
+    p_destination_city_id   uuid DEFAULT NULL,
     p_claim_number          numeric DEFAULT 0,
     p_additional_info       text    DEFAULT NULL,
-    p_assigned_user_id      integer DEFAULT NULL,
-    p_updated_by            integer DEFAULT NULL
+    p_assigned_user_id      uuid DEFAULT NULL,
+    p_updated_by            uuid DEFAULT NULL
 )
 RETURNS app.udt_row_count_result
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    v_invoice_id    integer;
-    v_app_id        integer;
+    v_invoice_id    uuid;
+    v_app_id        uuid;
     v_rows          integer;
 BEGIN
     SELECT i.id, m.application_id INTO v_invoice_id, v_app_id

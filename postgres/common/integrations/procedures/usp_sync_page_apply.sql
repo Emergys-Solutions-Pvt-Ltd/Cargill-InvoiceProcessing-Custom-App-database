@@ -25,9 +25,9 @@
 -- Errors:   CA404 profile not found for the job, CA409 job not running for this worker
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_sync_page_apply(
-    p_job_id        integer,
+    p_job_id        uuid,
     p_worker_id     text,
-    p_profile_id    integer,
+    p_profile_id    uuid,
     p_fetched       integer,
     p_rows          jsonb,
     p_rejects       jsonb,

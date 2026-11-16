@@ -9,10 +9,10 @@
 --           CA409 a job is already queued or running for this integration (no overlapping runs)
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_sync_job_enqueue(
-    p_integration_id    integer,
+    p_integration_id    uuid,
     p_trigger_type      text,
-    p_requested_by      integer,
-    p_retry_of_job_id   integer     DEFAULT NULL,
+    p_requested_by      uuid,
+    p_retry_of_job_id   uuid     DEFAULT NULL,
     p_attempt           integer     DEFAULT 1,
     p_run_after         timestamptz DEFAULT NULL
 )
@@ -22,7 +22,7 @@ AS $$
 DECLARE
     v_integration   record;
     v_max_attempts  integer;
-    v_id            integer;
+    v_id            uuid;
 BEGIN
     SELECT id, is_active, retry_policy INTO v_integration FROM app.integrations WHERE id = p_integration_id;
     IF NOT FOUND THEN

@@ -8,10 +8,10 @@
 -- =====================================================================
 CREATE OR REPLACE FUNCTION sjo.usp_invoice_sjo_fields_save(
     p_invoice_code      text,
-    p_updated_by        integer,
-    p_country_id        integer,
-    p_business_unit_id  integer,
-    p_erp_system_id     integer,
+    p_updated_by        uuid,
+    p_country_id        uuid,
+    p_business_unit_id  uuid,
+    p_erp_system_id     uuid,
     p_id_fiscal         text,
     p_ab_number         text    DEFAULT NULL,
     p_ab_name           text    DEFAULT NULL,
@@ -23,7 +23,7 @@ RETURNS app.udt_row_count_result
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    v_invoice_id    integer;
+    v_invoice_id    uuid;
     v_rows          integer;
 BEGIN
     SELECT i.id INTO v_invoice_id FROM sjo.sjo_invoices i WHERE i.invoice_code = p_invoice_code;
