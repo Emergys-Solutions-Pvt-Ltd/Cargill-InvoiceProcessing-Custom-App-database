@@ -13,6 +13,9 @@
 {{#sjo}}
 --             sjo_fields   = sjo.udt_invoice_sjo_fields_result (NULL until the SJO fields are saved)
 {{/sjo}}
+{{#rospbu}}
+--             rospbu_fields = rospbu.ufn_invoice_rospbu_fields (ROSPBU Invoice Edit fields)
+{{/rospbu}}
 -- =====================================================================
 CREATE OR REPLACE FUNCTION {{S}}.usp_invoice_get_by_code(p_invoice_code text)
 RETURNS SETOF {{S}}.udt_invoice_detail_result
@@ -98,7 +101,8 @@ AS $$
                    )::gpp.udt_invoice_sf_fields_result)
             FROM gpp.gpp_invoices sf WHERE sf.id = v.id
         ){{/gpp}}{{#sjo}},
-        sjo.ufn_invoice_sjo_fields(v.id){{/sjo}}
+        sjo.ufn_invoice_sjo_fields(v.id){{/sjo}}{{#rospbu}},
+        rospbu.ufn_invoice_rospbu_fields(v.id){{/rospbu}}
     FROM {{S}}.vw_invoice_summary v
     WHERE v.invoice_code = p_invoice_code;
 $$;

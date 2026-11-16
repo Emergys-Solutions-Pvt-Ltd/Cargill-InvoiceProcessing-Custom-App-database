@@ -70,3 +70,4 @@ CREATE INDEX IF NOT EXISTS ix_sjo_invoices_assigned_user   ON sjo.sjo_invoices (
 CREATE INDEX IF NOT EXISTS ix_sjo_invoices_id_fiscal       ON sjo.sjo_invoices (id_fiscal);
 
 -- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----
+

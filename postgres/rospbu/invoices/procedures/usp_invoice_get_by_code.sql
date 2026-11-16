@@ -8,6 +8,8 @@
 --             line_items   = app.udt_line_item_result[]
 --             source_email = app.udt_invoice_email_result (NULL when not received by email)
 
+--             rospbu_fields = rospbu.ufn_invoice_rospbu_fields (ROSPBU Invoice Edit fields)
+
 -- =====================================================================
 CREATE OR REPLACE FUNCTION rospbu.usp_invoice_get_by_code(p_invoice_code text)
 RETURNS SETOF rospbu.udt_invoice_detail_result
@@ -55,7 +57,8 @@ AS $$
                        ), '[]'::jsonb)
                    )::app.udt_invoice_email_result)
             FROM rospbu.invoice_source_emails e WHERE e.invoice_id = v.id
-        )
+        ),
+        rospbu.ufn_invoice_rospbu_fields(v.id)
     FROM rospbu.vw_invoice_summary v
     WHERE v.invoice_code = p_invoice_code;
 $$;

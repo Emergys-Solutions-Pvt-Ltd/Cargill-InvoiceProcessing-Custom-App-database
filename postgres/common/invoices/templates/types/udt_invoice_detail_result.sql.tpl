@@ -12,5 +12,6 @@ CREATE TYPE {{S}}.udt_invoice_detail_result AS (
     source_email   jsonb{{#gpp}},                -- app.udt_invoice_email_result, NULL when not received by email
     ccpps          jsonb,                -- array of gpp.udt_ccpp_result
     sf_fields      jsonb                 -- gpp.udt_invoice_sf_fields_result (legacy Salesforce fields){{/gpp}}{{#sjo}},                -- app.udt_invoice_email_result, NULL when not received by email
-    sjo_fields     jsonb                 -- sjo.udt_invoice_sjo_fields_result, NULL until the SJO fields are saved{{/sjo}}
+    sjo_fields     jsonb                 -- sjo.udt_invoice_sjo_fields_result, NULL until the SJO fields are saved{{/sjo}}{{#rospbu}},
+    rospbu_fields  jsonb                 -- rospbu.ufn_invoice_rospbu_fields (ROSPBU Invoice Edit fields){{/rospbu}}
 );

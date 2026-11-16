@@ -120,3 +120,4 @@ CREATE INDEX IF NOT EXISTS ix_gpp_invoices_team            ON gpp.gpp_invoices (
 CREATE INDEX IF NOT EXISTS ix_gpp_invoices_assigned_user   ON gpp.gpp_invoices (assigned_user_id);
 
 -- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----
+

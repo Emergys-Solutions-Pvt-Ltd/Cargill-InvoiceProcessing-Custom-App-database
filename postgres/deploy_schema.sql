@@ -178,6 +178,7 @@ END $$;
 \ir common/shared/functions/ufn_like_contains.sql
 \ir common/master-data/functions/ufn_master_data_select_sql.sql
 \ir sjo/functions/ufn_invoice_sjo_fields.sql
+\ir rospbu/functions/ufn_invoice_rospbu_fields.sql
 \ir common/integrations/functions/ufn_integration_row.sql
 \ir common/integrations/functions/ufn_sync_job_row.sql
 \ir common/integrations/functions/ufn_external_ref_count.sql

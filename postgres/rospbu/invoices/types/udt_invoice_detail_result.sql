@@ -10,5 +10,6 @@ CREATE TYPE rospbu.udt_invoice_detail_result AS (
     invoice        jsonb,                -- app.udt_invoice_result
     attachments    jsonb,                -- array of app.udt_attachment_result (primary first)
     line_items     jsonb,                -- array of app.udt_line_item_result
-    source_email   jsonb
+    source_email   jsonb,
+    rospbu_fields  jsonb                 -- rospbu.ufn_invoice_rospbu_fields (ROSPBU Invoice Edit fields)
 );

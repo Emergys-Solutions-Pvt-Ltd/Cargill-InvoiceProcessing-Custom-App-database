@@ -8,11 +8,12 @@
 --           by CUIT and stations missing by "CCC - Station Name" are created; a station value
 --           that does not follow that pattern is stored as no station.
 
---           Vendor name, CUIT and amount are required.
+--           ROSPBU: vendor / CUIT / amount are optional (amount defaults to 0); Pais, BU and ERP,
+--           when given, must be the code or name of an active Configuration item.
 
 --           assigned_user_id ("Assign To") must be an active user with access to the application.
 -- Errors:   CA400 empty request, missing fields, status not an active app.statuses code,
---                 duplicate codes in the request, invalid assignee,
+--                 duplicate codes in the request, unknown country / BU / ERP, invalid assignee,
 --                 module of another app
 --           CA404 unknown module
 --           CA409 invoice code already exists in ROSPBU, or the module's daily
@@ -55,12 +56,24 @@ BEGIN
         RAISE EXCEPTION 'The module does not belong to ROSPBU.' USING ERRCODE = 'CA400';
     END IF;
 
+    UPDATE tmp_rospbu_invoice_input
+    SET amount = coalesce(amount, 0),
+        retencion = coalesce(nullif(btrim(retencion), ''), 'No aplica'),
+        currency_code = upper(coalesce(nullif(btrim(currency_code), ''), 'ARS')),
+        rospbu_country = nullif(btrim(rospbu_country), ''),
+        rospbu_business_unit = nullif(btrim(rospbu_business_unit), ''),
+        rospbu_erp = nullif(btrim(rospbu_erp), '');
     SELECT string_agg('row ' || coalesce(row_no::text, '?'), ', ') INTO v_msg
     FROM tmp_rospbu_invoice_input
-    WHERE row_no IS NULL OR invoice_code IS NULL OR vendor_name IS NULL OR cuit IS NULL
-       OR amount IS NULL OR reception_date IS NULL;
+    WHERE row_no IS NULL OR invoice_code IS NULL OR reception_date IS NULL;
     IF v_msg IS NOT NULL THEN
         RAISE EXCEPTION 'Missing required invoice fields (%).', v_msg USING ERRCODE = 'CA400';
+    END IF;
+    -- vendor and CUIT go together: a CUIT without a vendor name cannot create the vendor
+    SELECT string_agg('row ' || row_no, ', ') INTO v_msg
+    FROM tmp_rospbu_invoice_input WHERE (vendor_name IS NULL) <> (cuit IS NULL);
+    IF v_msg IS NOT NULL THEN
+        RAISE EXCEPTION 'Vendor name and CUIT must be given together (%).', v_msg USING ERRCODE = 'CA400';
     END IF;
 
     -- Statuses come from Settings > Configuration (app.statuses); match codes case-insensitively
@@ -94,6 +107,39 @@ BEGIN
     FROM (SELECT invoice_code FROM tmp_rospbu_invoice_input GROUP BY invoice_code HAVING count(*) > 1) d;
     IF v_msg IS NOT NULL THEN
         RAISE EXCEPTION 'Duplicate invoice ids in request: %', v_msg USING ERRCODE = 'CA400';
+    END IF;
+
+    -- ROSPBU lists (optional): Pais / BU / ERP by code or name (active items only)
+    CREATE TEMP TABLE IF NOT EXISTS tmp_rospbu_invoice_refs (
+        row_no integer PRIMARY KEY, country_id uuid, business_unit_id uuid, erp_system_id uuid
+    ) ON COMMIT DROP;
+    TRUNCATE tmp_rospbu_invoice_refs;
+    INSERT INTO tmp_rospbu_invoice_refs
+    SELECT r.row_no,
+           (SELECT c.id FROM app.countries c WHERE c.is_active
+              AND (lower(c.code) = lower(r.rospbu_country) OR lower(c.name) = lower(r.rospbu_country))
+            ORDER BY (lower(c.code) = lower(r.rospbu_country)) DESC LIMIT 1),
+           (SELECT b.id FROM app.business_units b WHERE b.is_active
+              AND (lower(b.code) = lower(r.rospbu_business_unit) OR lower(b.name) = lower(r.rospbu_business_unit))
+            ORDER BY (lower(b.code) = lower(r.rospbu_business_unit)) DESC LIMIT 1),
+           (SELECT e.id FROM sjo.erp_systems e WHERE e.is_active
+              AND (lower(e.code) = lower(r.rospbu_erp) OR lower(e.name) = lower(r.rospbu_erp))
+            ORDER BY (lower(e.code) = lower(r.rospbu_erp)) DESC LIMIT 1)
+    FROM tmp_rospbu_invoice_input r;
+
+    SELECT string_agg(
+               'row ' || r.row_no || ': ' || concat_ws(', ',
+                   CASE WHEN r.rospbu_country IS NOT NULL AND x.country_id IS NULL THEN 'country ' || r.rospbu_country END,
+                   CASE WHEN r.rospbu_business_unit IS NOT NULL AND x.business_unit_id IS NULL THEN 'BU ' || r.rospbu_business_unit END,
+                   CASE WHEN r.rospbu_erp IS NOT NULL AND x.erp_system_id IS NULL THEN 'ERP ' || r.rospbu_erp END),
+               '; ' ORDER BY r.row_no) INTO v_msg
+    FROM tmp_rospbu_invoice_input r JOIN tmp_rospbu_invoice_refs x ON x.row_no = r.row_no
+    WHERE (r.rospbu_country IS NOT NULL AND x.country_id IS NULL)
+       OR (r.rospbu_business_unit IS NOT NULL AND x.business_unit_id IS NULL)
+       OR (r.rospbu_erp IS NOT NULL AND x.erp_system_id IS NULL);
+    IF v_msg IS NOT NULL THEN
+        RAISE EXCEPTION 'Unknown or inactive values (%). Add them in Settings > Configuration.', v_msg
+            USING ERRCODE = 'CA400';
     END IF;
 
     SELECT string_agg(i.invoice_code, ', ') INTO v_msg
@@ -131,10 +177,23 @@ BEGIN
 
     INSERT INTO rospbu.rospbu_invoices
         (invoice_code, module_id, vendor_id, station_id, invoice_1a, invoice_2a,
-         amount, invoice_subtotal, status, reception_date, email_reception_date, assigned_user_id, created_by)
+         amount, invoice_subtotal, status, reception_date, email_reception_date, assigned_user_id, created_by,
+         country_id, business_unit_id, erp_system_id, retencion, codigo_imputacion, nro_ar, cantidad, producto,
+         np, nro_remito, filial, additional_info, numero_documento, general_comment, invoice_date, centro_emisor,
+         due_date, currency_code, po_number, instrumento_pago, timbrado, bp_number, numero_liquidacion,
+         branch_plant, tipo_operacion)
     SELECT r.invoice_code, p_module_id, v.id, cs.id, r.invoice_1a, r.invoice_2a,
-           r.amount, r.amount, r.status, r.reception_date, r.email_reception_date, r.assigned_user_id, p_created_by
+           r.amount, r.amount, r.status, r.reception_date, r.email_reception_date, r.assigned_user_id, p_created_by,
+           x.country_id, x.business_unit_id, x.erp_system_id, r.retencion, nullif(btrim(r.codigo_imputacion), ''),
+           nullif(btrim(r.nro_ar), ''), r.cantidad, nullif(btrim(r.producto), ''), nullif(btrim(r.np), ''),
+           nullif(btrim(r.nro_remito), ''), nullif(btrim(r.filial), ''), nullif(btrim(r.additional_info), ''),
+           nullif(btrim(r.numero_documento), ''), nullif(btrim(r.general_comment), ''), r.invoice_date,
+           nullif(btrim(r.centro_emisor), ''), r.due_date, r.currency_code, nullif(btrim(r.po_number), ''),
+           nullif(btrim(r.instrumento_pago), ''), nullif(btrim(r.timbrado), ''), nullif(btrim(r.bp_number), ''),
+           nullif(btrim(r.numero_liquidacion), ''), nullif(btrim(r.branch_plant), ''), nullif(btrim(r.tipo_operacion), '')
     FROM tmp_rospbu_invoice_input r
+
+    JOIN tmp_rospbu_invoice_refs x ON x.row_no = r.row_no
 
     LEFT JOIN app.vendors v ON v.cuit = r.cuit
     CROSS JOIN LATERAL (SELECT regexp_match(r.country_station, '^\s*([A-Za-z]{3})\s*-\s*(.*\S)\s*$') AS parts) p
