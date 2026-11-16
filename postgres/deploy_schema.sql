@@ -211,6 +211,11 @@ END $$;
 \ir types/response/udt_mailbox_result.sql
 \ir types/response/udt_mailbox_attachment_result.sql
 \ir types/response/udt_mailbox_email_result.sql
+\ir types/response/udt_mailbox_detail_result.sql
+\ir types/response/udt_mailbox_list_result.sql
+\ir types/response/udt_mailbox_email_list_result.sql
+\ir types/response/udt_mailbox_email_detail_result.sql
+\ir types/response/udt_mailbox_option_result.sql
 
 -- ---- Helper functions & views ----
 \ir common/shared/functions/ufn_like_contains.sql
@@ -219,6 +224,7 @@ END $$;
 \ir common/integrations/functions/ufn_integration_row.sql
 \ir common/integrations/functions/ufn_sync_job_row.sql
 \ir common/integrations/functions/ufn_external_ref_count.sql
+\ir functions/ufn_mailbox_row.sql
 \ir auth/views/vw_user_summary.sql
 \ir gpp/invoices/views/vw_invoice_summary.sql
 \ir sjo/invoices/views/vw_invoice_summary.sql
@@ -227,6 +233,7 @@ END $$;
 -- ---- Stored functions ("procedures") ----
 \ir common/apps/procedures/usp_application_list.sql
 \ir common/apps/procedures/usp_app_module_get_by_slug.sql
+\ir common/apps/procedures/usp_app_module_list.sql
 
 \ir auth/procedures/usp_user_get_for_login.sql
 \ir auth/procedures/usp_user_get_by_id.sql
@@ -309,6 +316,16 @@ END $$;
 \ir procedures/mailbox/usp_mailbox_attachment_add.sql
 \ir procedures/mailbox/usp_mailbox_attachments_done.sql
 \ir procedures/mailbox/usp_mailbox_set_cursor.sql
+\ir procedures/mailbox/usp_mailbox_list.sql
+\ir procedures/mailbox/usp_mailbox_get_by_id.sql
+\ir procedures/mailbox/usp_mailbox_save.sql
+\ir procedures/mailbox/usp_mailbox_delete.sql
+\ir procedures/mailbox/usp_mailbox_email_list.sql
+\ir procedures/mailbox/usp_mailbox_email_get_by_id.sql
+\ir procedures/mailbox/usp_mailbox_email_set_status.sql
+\ir procedures/mailbox/usp_mailbox_attachment_list.sql
+\ir procedures/mailbox/usp_mailbox_attachment_get_by_id.sql
+\ir procedures/mailbox/usp_mailbox_list_for_application.sql
 
 
 
