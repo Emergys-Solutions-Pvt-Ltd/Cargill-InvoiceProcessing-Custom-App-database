@@ -5,7 +5,7 @@
 --           or its mailbox's module belongs to another application.
 --           attachment_count = non-inline attachments
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.usp_mailbox_email_get_by_id(p_application_code text, p_email_id integer)
+CREATE OR REPLACE FUNCTION app.usp_mailbox_email_get_by_id(p_application_code text, p_email_id uuid)
 RETURNS SETOF app.udt_mailbox_email_detail_result
 LANGUAGE sql
 STABLE

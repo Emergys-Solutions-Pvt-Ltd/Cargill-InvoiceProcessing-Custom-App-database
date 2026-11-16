@@ -5,10 +5,10 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_mailbox_list_result AS (
-    id              integer,
+    id              uuid,
     address         varchar(255),
     folder          varchar(255),
-    module_id       integer,
+    module_id       uuid,
     module_slug     varchar(100),
     module_name     varchar(150),
     is_active       boolean,

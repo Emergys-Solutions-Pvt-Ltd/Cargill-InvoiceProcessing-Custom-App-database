@@ -4,7 +4,7 @@
 -- Shared by usp_mailbox_list / _get_by_id / _save so the shape is defined once.
 -- Returns NULL when the mailbox does not exist.
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.ufn_mailbox_row(p_mailbox_id integer)
+CREATE OR REPLACE FUNCTION app.ufn_mailbox_row(p_mailbox_id uuid)
 RETURNS app.udt_mailbox_detail_result
 LANGUAGE sql
 STABLE

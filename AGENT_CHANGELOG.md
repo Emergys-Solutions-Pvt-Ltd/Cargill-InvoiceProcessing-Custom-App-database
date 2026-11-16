@@ -26,6 +26,55 @@ Written for a future developer who has no context.
 
 ---
 
+## 2026-11-16 — Mailbox settings + Inbox objects converted from integer ids to uuid (Feature: email-configuration + email-inbox)
+**Agent:** database-agent · **Status:** Done (not deployed; nothing executed against any DB) · **Handoffs:** none (contract in parent `DECISIONS.md` D-024, D-025)
+
+### What changed
+Every id / `*_id` type column, parameter and local variable became `uuid`. Counts and paging (`attachment_count`,
+`total_items`, `total_pages`, `page`, `page_size`, `p_page`, `p_page_size`, `v_rows`) stay `integer`. Function names,
+parameter names and order, defaults, behaviour, error codes and messages are unchanged.
+- `postgres/types/response/udt_mailbox_detail_result.sql`, `udt_mailbox_list_result.sql` — `id`, `module_id` → uuid.
+- `postgres/types/response/udt_mailbox_email_list_result.sql`, `udt_mailbox_email_detail_result.sql` — `id`, `mailbox_id`,
+  `invoice_id` → uuid.
+- `postgres/types/response/udt_mailbox_option_result.sql` — `id` → uuid.
+- `postgres/functions/ufn_mailbox_row.sql` — `ufn_mailbox_row(p_mailbox_id uuid)`.
+- `postgres/procedures/mailbox/usp_mailbox_save.sql` — `p_mailbox_id uuid`; locals `v_id`, `v_module_id`,
+  `v_current_module_id` uuid. Create still takes the new id from `INSERT … RETURNING id` (table default `gen_random_uuid()`).
+- `usp_mailbox_delete(p_mailbox_id uuid)`, `usp_mailbox_get_by_id(p_mailbox_id uuid)`.
+- `usp_mailbox_email_list(p_application_code text, p_status text DEFAULT NULL, p_mailbox_id uuid DEFAULT NULL,
+  p_search text DEFAULT NULL, p_page integer DEFAULT 1, p_page_size integer DEFAULT 10)`.
+- `usp_mailbox_email_get_by_id(p_application_code text, p_email_id uuid)`.
+- `usp_mailbox_email_set_status(p_application_code text, p_email_id uuid, p_status text, p_note text DEFAULT NULL)`;
+  local `v_invoice_id` uuid.
+- `usp_mailbox_attachment_list(p_email_id uuid)`, `usp_mailbox_attachment_get_by_id(p_attachment_id uuid)`.
+- `usp_mailbox_list` and `usp_mailbox_list_for_application` — no text change needed (no id parameters); they return the
+  converted types. `common/apps/procedures/usp_app_module_list.sql` — checked, no change (already returns uuid ids).
+- `postgres/tests/test_mailboxes.sql`, `postgres/tests/test_mailbox_emails.sql` — ids read from `t_ctx` with `::uuid`;
+  unknown ids use `'00000000-0000-0000-0000-000000000000'::uuid` instead of `-1`; test `invoice_id` values 123 / 77 became
+  fixed uuids `…000000000123` / `…000000000077`. Order assertions that relied on increasing integer ids were rewritten:
+  the e3 / e4 received_at tie (list order `received_at DESC, id DESC`) now computes the expected pair order at setup from
+  the two uuids (`t_ctx 'tie34'`), and the attachment list checks the file set by name plus "returned order = order by id".
+- `postgres/deploy_schema.sql` — no change (same file names; its DROP loop removes the old integer overloads on a full run).
+
+### Why
+Ashish Shende's "GUID changes" commit (0e25c59, merged locally in b9a4560) converted all tables, types and functions to uuid
+ids (D-024). These mailbox / Inbox files were written before that merge and still used integer ids, so they no longer matched
+`app.mailboxes`, `app.mailbox_emails`, `app.mailbox_email_attachments` and `app.app_modules`. D-025 approved the conversion.
+
+### Cross-repo impact
+- Backend and frontend convert their side at the same time (D-025): ids are strings (uuid) in the API.
+- Supabase: `CREATE OR REPLACE` with a new parameter type creates an overload, so the old integer-signature functions
+  must be dropped there first (and the changed types recreated). The main session builds that paste-ready script (D-019).
+
+### New env vars / dependencies / commands for the user
+- None in this repo. Supabase script: see Cross-repo impact.
+
+### Still to do / known issues
+- Not executed anywhere (no local DB). Tests not run.
+- "ordered by id" (attachment list, tie-breakers in `usp_mailbox_list`, `usp_mailbox_email_list`,
+  `usp_mailbox_list_for_application`, and `a.id` in `usp_app_module_list`) is still deterministic but no longer means
+  insertion order. Left unchanged on purpose (no behaviour change in this task).
+
 ## 2026-11-05 — Inbox functions: received emails per application (Feature: email-inbox)
 **Agent:** database-agent · **Status:** Done (not deployed; nothing executed against any DB) · **Handoffs:** none (contract fixed in parent `DECISIONS.md` D-023)
 

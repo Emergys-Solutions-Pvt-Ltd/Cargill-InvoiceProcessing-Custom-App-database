@@ -3,7 +3,7 @@
 -- Request:  p_mailbox_id
 -- Response: SETOF app.udt_mailbox_detail_result (no row when not found)
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.usp_mailbox_get_by_id(p_mailbox_id integer)
+CREATE OR REPLACE FUNCTION app.usp_mailbox_get_by_id(p_mailbox_id uuid)
 RETURNS SETOF app.udt_mailbox_detail_result
 LANGUAGE sql
 STABLE

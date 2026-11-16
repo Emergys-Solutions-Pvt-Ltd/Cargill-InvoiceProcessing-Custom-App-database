@@ -6,7 +6,7 @@
 -- Not scoped to an application: the backend first checks the email with usp_mailbox_email_get_by_id.
 -- storage_path is relative to the backend storage root; never expose it to browsers.
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.usp_mailbox_attachment_list(p_email_id integer)
+CREATE OR REPLACE FUNCTION app.usp_mailbox_attachment_list(p_email_id uuid)
 RETURNS SETOF app.udt_mailbox_attachment_result
 LANGUAGE sql
 STABLE

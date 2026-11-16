@@ -25,25 +25,27 @@ CREATE TEMP TABLE t_ctx (k text PRIMARY KEY, v text) ON COMMIT DROP;
 --   e1  A 2/inbox    T+1h  Alice Vendor <alice@vendor.example>   'ZZINB Invoice 100'  New, 2 PDFs + 1 inline
 --   e2  B 1/inbox    T+2h  Bob Supplier <bob@supplier.example>   'ZZINB Statement'    Failed ('Download failed')
 --   e3  A 2/inbox    T+3h  Carol <carol@vendor.example>          'ZZINB 50%_off'      New
---   e4  A 2/Archive  T+3h  <dave@other.example> (no name)        'ZZINB Reminder'     New (same time as e3, higher id)
---   e5  A 2/inbox    T+4h  Erin <erin@vendor.example>            'ZZINB Paid'         Processed, invoice_id 123
+--   e4  A 2/Archive  T+3h  <dave@other.example> (no name)        'ZZINB Reminder'     New (same time as e3)
+--   e5  A 2/inbox    T+4h  Erin <erin@vendor.example>            'ZZINB Paid'         Processed, invoice_id ...0123
 --   ex  X 3/inbox    T+5h  Alice Vendor <alice@vendor.example>   'ZZINB Other app'    New (other application)
+-- e3 and e4 tie on received_at, so the list puts the higher id first. Ids are random uuids, so the
+-- expected order of the pair is worked out at setup (t_ctx 'tie34') instead of being hard-coded.
 DO $$
 DECLARE
     v_t     timestamptz := '2026-01-01 10:00:00+00';
-    v_app   integer;
-    v_app2  integer;
-    v_a     integer;
-    v_a2    integer;
-    v_b     integer;
-    v_x     integer;
-    v_e1    integer;
-    v_e2    integer;
-    v_e3    integer;
-    v_e4    integer;
-    v_e5    integer;
-    v_ex    integer;
-    v_att1  integer;
+    v_app   uuid;
+    v_app2  uuid;
+    v_a     uuid;
+    v_a2    uuid;
+    v_b     uuid;
+    v_x     uuid;
+    v_e1    uuid;
+    v_e2    uuid;
+    v_e3    uuid;
+    v_e4    uuid;
+    v_e5    uuid;
+    v_ex    uuid;
+    v_att1  uuid;
 BEGIN
     INSERT INTO app.applications (code, name, description) VALUES ('ZZINB', 'ZZ Inbox Test', 'test only')
     RETURNING id INTO v_app;
@@ -80,12 +82,14 @@ BEGIN
                'inbox/2026/01/zz/c.png', true);
 
     PERFORM app.usp_mailbox_attachments_done(v_e2, 'Download failed');     -- New -> Failed
-    UPDATE app.mailbox_emails SET status = 'Processed', invoice_id = 123 WHERE id = v_e5;
+    UPDATE app.mailbox_emails SET status = 'Processed', invoice_id = '00000000-0000-0000-0000-000000000123' WHERE id = v_e5;
 
     INSERT INTO t_ctx VALUES
         ('a', v_a::text), ('a2', v_a2::text), ('b', v_b::text), ('x', v_x::text),
         ('e1', v_e1::text), ('e2', v_e2::text), ('e3', v_e3::text), ('e4', v_e4::text), ('e5', v_e5::text),
-        ('ex', v_ex::text), ('att1', v_att1::text);
+        ('ex', v_ex::text), ('att1', v_att1::text),
+        -- e3 / e4: same received_at, higher id first (subjects in the expected list order)
+        ('tie34', CASE WHEN v_e4 > v_e3 THEN 'ZZINB Reminder,ZZINB 50%_off' ELSE 'ZZINB 50%_off,ZZINB Reminder' END);
 
     ASSERT (SELECT status FROM app.mailbox_emails WHERE id = v_e2) = 'Failed', 'setup: e2 Failed';
 END $$;
@@ -93,13 +97,14 @@ END $$;
 -- ---- 1. Scope per application ----
 DO $$
 DECLARE
-    v_ex    integer := (SELECT v::integer FROM t_ctx WHERE k = 'ex');
-    v_x     integer := (SELECT v::integer FROM t_ctx WHERE k = 'x');
+    v_ex    uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'ex');
+    v_x     uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'x');
+    v_tie   text := (SELECT v FROM t_ctx WHERE k = 'tie34');
     v_order text;
     v_msg   text;
 BEGIN
     SELECT string_agg(subject, ',') INTO v_order FROM app.usp_mailbox_email_list('ZZINB', NULL, NULL, NULL, 1, 100);
-    ASSERT v_order = 'ZZINB Paid,ZZINB Reminder,ZZINB 50%_off,ZZINB Statement,ZZINB Invoice 100',
+    ASSERT v_order = 'ZZINB Paid,' || v_tie || ',ZZINB Statement,ZZINB Invoice 100',
         'list ZZINB (newest first, other application excluded): ' || coalesce(v_order, '<none>');
     ASSERT (SELECT total_items FROM app.usp_mailbox_email_list('ZZINB', NULL, NULL, NULL, 1, 100) LIMIT 1) = 5, 'total_items';
 
@@ -120,7 +125,7 @@ BEGIN
 
     v_msg := NULL;
     BEGIN
-        PERFORM app.usp_mailbox_email_set_status('ZZINB', -1, 'Ignored');
+        PERFORM app.usp_mailbox_email_set_status('ZZINB', '00000000-0000-0000-0000-000000000000'::uuid, 'Ignored');
         ASSERT false, 'expected CA404 for set_status on an unknown email';
     EXCEPTION WHEN SQLSTATE 'CA404' THEN v_msg := SQLERRM;
     END;
@@ -133,16 +138,17 @@ END $$;
 -- ---- 2. Status filter ----
 DO $$
 DECLARE
+    v_tie   text := (SELECT v FROM t_ctx WHERE k = 'tie34');
     v_order text;
     v_msg   text;
     v_case  text;
 BEGIN
     SELECT string_agg(subject, ',') INTO v_order FROM app.usp_mailbox_email_list('ZZINB', 'New', NULL, NULL, 1, 100);
-    ASSERT v_order = 'ZZINB Reminder,ZZINB 50%_off,ZZINB Invoice 100', 'status New: ' || coalesce(v_order, '<none>');
+    ASSERT v_order = v_tie || ',ZZINB Invoice 100', 'status New: ' || coalesce(v_order, '<none>');
     ASSERT (SELECT string_agg(subject || ':' || status_note, ',') FROM app.usp_mailbox_email_list('ZZINB', 'Failed'))
         = 'ZZINB Statement:Download failed', 'status Failed with note';
     ASSERT (SELECT string_agg(subject || ':' || invoice_id, ',') FROM app.usp_mailbox_email_list('ZZINB', 'Processed'))
-        = 'ZZINB Paid:123', 'status Processed with invoice_id';
+        = 'ZZINB Paid:00000000-0000-0000-0000-000000000123', 'status Processed with invoice_id';
     ASSERT NOT EXISTS (SELECT 1 FROM app.usp_mailbox_email_list('ZZINB', 'Ignored')), 'status Ignored: none yet';
 
     FOR v_case IN SELECT unnest(ARRAY['Bogus', 'new', ''])
@@ -160,8 +166,8 @@ END $$;
 -- ---- 3. Mailbox filter ----
 DO $$
 DECLARE
-    v_a     integer := (SELECT v::integer FROM t_ctx WHERE k = 'a');
-    v_b     integer := (SELECT v::integer FROM t_ctx WHERE k = 'b');
+    v_a     uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'a');
+    v_b     uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'b');
 BEGIN
     ASSERT (SELECT string_agg(subject, ',') FROM app.usp_mailbox_email_list('ZZINB', NULL, v_a))
         = 'ZZINB Paid,ZZINB 50%_off,ZZINB Invoice 100', 'mailbox A filter';
@@ -169,7 +175,7 @@ BEGIN
         = 'ZZINB Statement', 'mailbox B filter (inactive mailbox still listed)';
     ASSERT (SELECT string_agg(subject, ',') FROM app.usp_mailbox_email_list('ZZINB', 'New', v_a))
         = 'ZZINB 50%_off,ZZINB Invoice 100', 'mailbox + status filter';
-    ASSERT NOT EXISTS (SELECT 1 FROM app.usp_mailbox_email_list('ZZINB', NULL, -1)), 'unknown mailbox: no rows';
+    ASSERT NOT EXISTS (SELECT 1 FROM app.usp_mailbox_email_list('ZZINB', NULL, '00000000-0000-0000-0000-000000000000'::uuid)), 'unknown mailbox: no rows';
 END $$;
 
 -- ---- 4. Search (subject, from name, from address; case-insensitive; literal % and _) ----
@@ -194,15 +200,16 @@ END $$;
 -- ---- 5. Order, paging, row content, attachment_count ----
 DO $$
 DECLARE
-    v_a     integer := (SELECT v::integer FROM t_ctx WHERE k = 'a');
-    v_e1    integer := (SELECT v::integer FROM t_ctx WHERE k = 'e1');
+    v_a     uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'a');
+    v_e1    uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'e1');
+    v_tie   text := (SELECT v FROM t_ctx WHERE k = 'tie34');
     v_row   app.udt_mailbox_email_list_result;
     v_msg   text;
 BEGIN
-    -- e3 and e4 have the same received_at: higher id first
+    -- e3 and e4 have the same received_at: higher id first, so page 2 starts with the lower-id one of the pair
     ASSERT (SELECT string_agg(subject || ':' || page || '/' || total_pages || ':' || total_items || ':' || page_size, ',')
             FROM app.usp_mailbox_email_list('ZZINB', NULL, NULL, NULL, 2, 2))
-        = 'ZZINB 50%_off:2/3:5:2,ZZINB Statement:2/3:5:2', 'page 2 of 3 (page size 2)';
+        = split_part(v_tie, ',', 2) || ':2/3:5:2,ZZINB Statement:2/3:5:2', 'page 2 of 3 (page size 2)';
     ASSERT (SELECT string_agg(subject || ':' || page, ',') FROM app.usp_mailbox_email_list('ZZINB', NULL, NULL, NULL, 99, 2))
         = 'ZZINB Invoice 100:3', 'page past the end clamped to the last page';
     ASSERT (SELECT min(page) FROM app.usp_mailbox_email_list('ZZINB', NULL, NULL, NULL, 0, 2)) = 1, 'page 0 clamped to 1';
@@ -236,7 +243,7 @@ END $$;
 -- ---- 6. Detail ----
 DO $$
 DECLARE
-    v_e1    integer := (SELECT v::integer FROM t_ctx WHERE k = 'e1');
+    v_e1    uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'e1');
     v_d     app.udt_mailbox_email_detail_result;
 BEGIN
     SELECT * INTO v_d FROM app.usp_mailbox_email_get_by_id('ZZINB', v_e1);
@@ -246,16 +253,16 @@ BEGIN
     ASSERT v_d.subject = 'ZZINB Invoice 100' AND v_d.body_text = 'Plain body', 'detail: subject / body';
     ASSERT v_d.attachment_count = 2 AND v_d.status = 'New' AND v_d.created_at IS NOT NULL AND v_d.updated_at IS NOT NULL,
         'detail: attachment_count / status / timestamps';
-    ASSERT NOT EXISTS (SELECT 1 FROM app.usp_mailbox_email_get_by_id('ZZINB', -1)), 'detail: unknown id -> no row';
+    ASSERT NOT EXISTS (SELECT 1 FROM app.usp_mailbox_email_get_by_id('ZZINB', '00000000-0000-0000-0000-000000000000'::uuid)), 'detail: unknown id -> no row';
 END $$;
 
 -- ---- 7. Status changes and note rules ----
 DO $$
 DECLARE
-    v_e1    integer := (SELECT v::integer FROM t_ctx WHERE k = 'e1');
-    v_e2    integer := (SELECT v::integer FROM t_ctx WHERE k = 'e2');
-    v_e3    integer := (SELECT v::integer FROM t_ctx WHERE k = 'e3');
-    v_e5    integer := (SELECT v::integer FROM t_ctx WHERE k = 'e5');
+    v_e1    uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'e1');
+    v_e2    uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'e2');
+    v_e3    uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'e3');
+    v_e5    uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'e5');
     v_old   timestamptz := '2026-01-01 00:00:00+00';
     v_d     app.udt_mailbox_email_detail_result;
     v_msg   text;
@@ -329,7 +336,7 @@ BEGIN
     ASSERT (SELECT status FROM app.mailbox_emails WHERE id = v_e5) = 'Processed', 'Processed email unchanged';
 
     -- New email with an invoice_id: CA409
-    UPDATE app.mailbox_emails SET invoice_id = 77 WHERE id = v_e3;
+    UPDATE app.mailbox_emails SET invoice_id = '00000000-0000-0000-0000-000000000077' WHERE id = v_e3;
     v_msg := NULL;
     BEGIN
         PERFORM app.usp_mailbox_email_set_status('ZZINB', v_e3, 'Ignored');
@@ -366,28 +373,34 @@ END $$;
 -- ---- 8. Attachments ----
 DO $$
 DECLARE
-    v_e1    integer := (SELECT v::integer FROM t_ctx WHERE k = 'e1');
-    v_e3    integer := (SELECT v::integer FROM t_ctx WHERE k = 'e3');
-    v_att1  integer := (SELECT v::integer FROM t_ctx WHERE k = 'att1');
+    v_e1    uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'e1');
+    v_e3    uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'e3');
+    v_att1  uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'att1');
     v_att   app.udt_mailbox_attachment_result;
 BEGIN
-    ASSERT (SELECT string_agg(file_name, ',') FROM app.usp_mailbox_attachment_list(v_e1)) = 'invoice.pdf,second.pdf',
-        'attachment list: non-inline only, ordered by id';
+    -- ids are random uuids: check the set by name, and the order against the ids themselves
+    ASSERT (SELECT string_agg(file_name, ',' ORDER BY file_name) FROM app.usp_mailbox_attachment_list(v_e1))
+        = 'invoice.pdf,second.pdf', 'attachment list: non-inline only';
+    ASSERT (SELECT array_agg(l.id ORDER BY l.ord) = array_agg(l.id ORDER BY l.id)
+            FROM app.usp_mailbox_attachment_list(v_e1) WITH ORDINALITY
+                 AS l (id, mailbox_email_id, file_name, mime_type, size_bytes, storage_path, is_inline, created_at,
+                       storage_provider, storage_bucket, content_sha256, storage_etag, ord)),
+        'attachment list ordered by id';
     ASSERT NOT EXISTS (SELECT 1 FROM app.usp_mailbox_attachment_list(v_e1) WHERE is_inline), 'no inline attachments listed';
     ASSERT NOT EXISTS (SELECT 1 FROM app.usp_mailbox_attachment_list(v_e3)), 'email without attachments: no rows';
-    ASSERT NOT EXISTS (SELECT 1 FROM app.usp_mailbox_attachment_list(-1)), 'unknown email: no rows';
+    ASSERT NOT EXISTS (SELECT 1 FROM app.usp_mailbox_attachment_list('00000000-0000-0000-0000-000000000000'::uuid)), 'unknown email: no rows';
 
     SELECT * INTO v_att FROM app.usp_mailbox_attachment_get_by_id(v_att1);
     ASSERT v_att.id = v_att1 AND v_att.mailbox_email_id = v_e1 AND v_att.file_name = 'invoice.pdf'
        AND v_att.mime_type = 'application/pdf' AND v_att.size_bytes = 1000
        AND v_att.storage_path = 'inbox/2026/01/zz/a.pdf' AND v_att.storage_provider = 'local', 'attachment get by id';
-    ASSERT NOT EXISTS (SELECT 1 FROM app.usp_mailbox_attachment_get_by_id(-1)), 'unknown attachment: no row';
+    ASSERT NOT EXISTS (SELECT 1 FROM app.usp_mailbox_attachment_get_by_id('00000000-0000-0000-0000-000000000000'::uuid)), 'unknown attachment: no row';
 END $$;
 
 -- ---- 9. Mailbox options per application (active and inactive) ----
 DO $$
 DECLARE
-    v_b     integer := (SELECT v::integer FROM t_ctx WHERE k = 'b');
+    v_b     uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'b');
     v_order text;
 BEGIN
     SELECT string_agg(address || '/' || folder, ',') INTO v_order FROM app.usp_mailbox_list_for_application('ZZINB');

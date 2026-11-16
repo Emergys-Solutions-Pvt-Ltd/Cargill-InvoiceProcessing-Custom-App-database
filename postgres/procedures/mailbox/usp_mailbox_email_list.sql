@@ -13,7 +13,7 @@
 CREATE OR REPLACE FUNCTION app.usp_mailbox_email_list(
     p_application_code  text,
     p_status            text    DEFAULT NULL,
-    p_mailbox_id        integer DEFAULT NULL,
+    p_mailbox_id        uuid    DEFAULT NULL,
     p_search            text    DEFAULT NULL,
     p_page              integer DEFAULT 1,
     p_page_size         integer DEFAULT 10

@@ -6,8 +6,8 @@
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE app.udt_mailbox_email_list_result AS (
-    id                  integer,
-    mailbox_id          integer,
+    id                  uuid,
+    mailbox_id          uuid,
     mailbox_address     varchar(255),
     module_slug         varchar(100),
     module_name         varchar(150),
@@ -18,7 +18,7 @@ CREATE TYPE app.udt_mailbox_email_list_result AS (
     attachment_count    integer,
     status              varchar(20),          -- New | Processed | Ignored | Failed
     status_note         varchar(1000),
-    invoice_id          integer,              -- set when Processed (app-specific invoice id)
+    invoice_id          uuid,                 -- set when Processed (app-specific invoice id)
     total_items         integer,
     total_pages         integer,
     page                integer,

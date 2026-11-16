@@ -19,8 +19,8 @@ CREATE TEMP TABLE t_ctx (k text PRIMARY KEY, v text) ON COMMIT DROP;
 -- ---- Setup: one test application with three modules (A, B, C), all active ----
 DO $$
 DECLARE
-    v_app   integer;
-    v_app2  integer;
+    v_app   uuid;
+    v_app2  uuid;
 BEGIN
     INSERT INTO app.applications (code, name, description) VALUES ('ZZMBX', 'ZZ Mailbox Test', 'test only')
     RETURNING id INTO v_app;
@@ -53,7 +53,7 @@ BEGIN
 
     SELECT * INTO v_get FROM app.usp_mailbox_get_by_id(v_mb.id);
     ASSERT v_get.id = v_mb.id AND v_get.address = 'zz-mbx-test-one@example.com', 'get by id';
-    ASSERT NOT EXISTS (SELECT 1 FROM app.usp_mailbox_get_by_id(-1)), 'unknown id: no row';
+    ASSERT NOT EXISTS (SELECT 1 FROM app.usp_mailbox_get_by_id('00000000-0000-0000-0000-000000000000'::uuid)), 'unknown id: no row';
 
     INSERT INTO t_ctx VALUES ('one', v_mb.id::text);
 END $$;
@@ -101,7 +101,7 @@ END $$;
 -- ---- 4. Duplicate address + folder (case-insensitive) -> CA409 ----
 DO $$
 DECLARE
-    v_one   integer := (SELECT v::integer FROM t_ctx WHERE k = 'one');
+    v_one   uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'one');
     v_two   app.udt_mailbox_detail_result;
 BEGIN
     BEGIN
@@ -130,12 +130,12 @@ END $$;
 DO $$
 BEGIN
     BEGIN
-        PERFORM app.usp_mailbox_save(-1, 'zz-mbx-test-v@example.com', 'inbox', 'zz-mbx-a');
+        PERFORM app.usp_mailbox_save('00000000-0000-0000-0000-000000000000'::uuid, 'zz-mbx-test-v@example.com', 'inbox', 'zz-mbx-a');
         ASSERT false, 'expected CA404 for update of unknown mailbox';
     EXCEPTION WHEN SQLSTATE 'CA404' THEN NULL;
     END;
     BEGIN
-        PERFORM app.usp_mailbox_delete(-1);
+        PERFORM app.usp_mailbox_delete('00000000-0000-0000-0000-000000000000'::uuid);
         ASSERT false, 'expected CA404 for delete of unknown mailbox';
     EXCEPTION WHEN SQLSTATE 'CA404' THEN NULL;
     END;
@@ -181,7 +181,7 @@ END $$;
 -- ---- 7. D-016: an update may keep its current (now inactive) module ----
 DO $$
 DECLARE
-    v_two   integer := (SELECT v::integer FROM t_ctx WHERE k = 'two');   -- on module B
+    v_two   uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'two');   -- on module B
     v_mb    app.udt_mailbox_detail_result;
 BEGIN
     UPDATE app.app_modules SET is_active = false WHERE slug IN ('zz-mbx-b', 'zz-mbx-c');
@@ -220,7 +220,7 @@ END $$;
 -- ---- 8. D-017: address / folder change clears delta_link, last_polled_at, last_error ----
 DO $$
 DECLARE
-    v_one   integer := (SELECT v::integer FROM t_ctx WHERE k = 'one');
+    v_one   uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'one');
     v_mb    app.udt_mailbox_detail_result;
 BEGIN
     UPDATE app.mailboxes
@@ -260,8 +260,8 @@ END $$;
 -- ---- 9. Delete: blocked once the mailbox has emails (D-013) ----
 DO $$
 DECLARE
-    v_one   integer := (SELECT v::integer FROM t_ctx WHERE k = 'one');
-    v_two   integer := (SELECT v::integer FROM t_ctx WHERE k = 'two');
+    v_one   uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'one');
+    v_two   uuid := (SELECT v::uuid FROM t_ctx WHERE k = 'two');
     v_msg   text;
 BEGIN
     PERFORM app.usp_mailbox_email_upsert(v_one, 'zz-mbx-test-graph-id-1', NULL, 'Sender', 'sender@example.com',

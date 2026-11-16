@@ -14,7 +14,7 @@
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_mailbox_email_set_status(
     p_application_code  text,
-    p_email_id          integer,
+    p_email_id          uuid,
     p_status            text,
     p_note              text DEFAULT NULL
 )
@@ -24,7 +24,7 @@ AS $$
 DECLARE
     v_note          text := nullif(btrim(p_note), '');
     v_current       text;
-    v_invoice_id    integer;
+    v_invoice_id    uuid;
     v_result        app.udt_mailbox_email_detail_result;
 BEGIN
     IF p_status IS NULL OR p_status NOT IN ('New', 'Ignored') THEN

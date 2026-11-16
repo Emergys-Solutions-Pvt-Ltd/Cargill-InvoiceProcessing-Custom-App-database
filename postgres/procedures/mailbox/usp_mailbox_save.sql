@@ -15,7 +15,7 @@
 --           CA409 address + folder already registered (case-insensitive)
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app.usp_mailbox_save(
-    p_mailbox_id    integer,
+    p_mailbox_id    uuid,
     p_address       text,
     p_folder        text    DEFAULT 'inbox',
     p_module_slug   text    DEFAULT NULL,
@@ -28,13 +28,13 @@ DECLARE
     v_address           text := nullif(btrim(p_address), '');
     v_folder            text := coalesce(nullif(btrim(p_folder), ''), 'inbox');
     v_slug              text := nullif(btrim(p_module_slug), '');
-    v_module_id         integer;
+    v_module_id         uuid;
     v_module_active     boolean;
     v_current_address   text;
     v_current_folder    text;
-    v_current_module_id integer;
+    v_current_module_id uuid;
     v_location_changed  boolean;
-    v_id                integer := p_mailbox_id;
+    v_id                uuid := p_mailbox_id;
 BEGIN
     IF v_address IS NULL THEN
         RAISE EXCEPTION 'Address is required.' USING ERRCODE = 'CA400';

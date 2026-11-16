@@ -7,7 +7,7 @@
 --            between the check and the delete (inserting an email waits for the lock).
 -- Errors:   CA404 mailbox not found, CA409 the mailbox has received emails
 -- =====================================================================
-CREATE OR REPLACE FUNCTION app.usp_mailbox_delete(p_mailbox_id integer)
+CREATE OR REPLACE FUNCTION app.usp_mailbox_delete(p_mailbox_id uuid)
 RETURNS app.udt_row_count_result
 LANGUAGE plpgsql
 AS $$
