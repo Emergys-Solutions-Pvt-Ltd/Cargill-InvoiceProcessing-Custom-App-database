@@ -5,8 +5,8 @@
 -- unchanged records are skipped on re-sync. Never purged: links the invoice to its source,
 -- profile and the first / last job that touched it.
 -- Depends on: {{S}}.{{T}}, app.integrations, app.integration_profiles, app.integration_sync_jobs
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS {{S}}.invoice_external_refs (
     id                  uuid DEFAULT gen_random_uuid() CONSTRAINT pk_{{S}}_external_refs PRIMARY KEY,
@@ -29,5 +29,3 @@ CREATE TABLE IF NOT EXISTS {{S}}.invoice_external_refs (
 CREATE UNIQUE INDEX IF NOT EXISTS ux_{{S}}_external_refs_source_key ON {{S}}.invoice_external_refs (source_system, external_key);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_{{S}}_external_refs_invoice ON {{S}}.invoice_external_refs (invoice_id);
 CREATE INDEX IF NOT EXISTS ix_{{S}}_external_refs_integration ON {{S}}.invoice_external_refs (integration_id);
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

@@ -3,7 +3,7 @@
 -- Request:  p_invoice_code, p_user_id (acting user: sets created_by on insert, updated_by always),
 --           p_product, p_status (required, match gpp.invoice_ccpps), everything else optional -
 --           the legacy Salesforce "GP CCPP" fields, named/typed as in gpp.invoice_ccpps'
---           UPGRADES section (../shared/handoffs/database.md, 2026-11-02).
+--           CREATE block (../shared/handoffs/database.md, 2026-11-02).
 -- Response: gpp.udt_ccpp_result (the saved row)
 -- Errors:   CA400 missing product/status, unknown acting user
 --           CA404 invoice not found, or (on update) CCPP row not found / belongs to another invoice

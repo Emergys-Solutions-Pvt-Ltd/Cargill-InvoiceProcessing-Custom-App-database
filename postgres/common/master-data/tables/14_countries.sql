@@ -2,8 +2,8 @@
 -- app.countries - Configuration > Countries (master data)
 -- Shares the master-data column set (code, name, description, sort_order, is_active)
 -- managed generically by app.usp_master_data_* (see 20_master_data_entities.sql).
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.countries (
     id          uuid DEFAULT gen_random_uuid() CONSTRAINT pk_countries PRIMARY KEY,
@@ -18,5 +18,3 @@ CREATE TABLE IF NOT EXISTS app.countries (
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_countries_code ON app.countries (lower(code));
 CREATE UNIQUE INDEX IF NOT EXISTS uq_countries_name ON app.countries (lower(name));
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

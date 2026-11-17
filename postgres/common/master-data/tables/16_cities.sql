@@ -1,8 +1,8 @@
 -- =====================================================================
 -- app.cities - Configuration > Cities, each belonging to a state
 -- Depends on: app.states
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.cities (
     id          uuid DEFAULT gen_random_uuid() CONSTRAINT pk_cities PRIMARY KEY,
@@ -18,5 +18,3 @@ CREATE TABLE IF NOT EXISTS app.cities (
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_cities_name ON app.cities (state_id, lower(name));
 CREATE INDEX IF NOT EXISTS ix_cities_state ON app.cities (state_id);
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

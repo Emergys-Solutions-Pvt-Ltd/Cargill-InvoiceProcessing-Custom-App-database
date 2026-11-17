@@ -1,0 +1,48 @@
+{
+  "digest": "e6c777fc4bccc29dad9195495e193980b3921cf75dd54c48957773b97cae7383",
+  "environment": "dev",
+  "mode": "incremental",
+  "has_changes": true,
+  "operations": {
+    "create": 3,
+    "alter": 1,
+    "drop": 1,
+    "recreate": 0
+  },
+  "by_type": {
+    "function:alter": 1,
+    "function:drop": 1,
+    "table.column:create": 1,
+    "table.index:create": 2
+  },
+  "schemas": [
+    {
+      "schema": "app_auth",
+      "status": "no_changes",
+      "steps": 0
+    },
+    {
+      "schema": "app",
+      "status": "changes",
+      "steps": 4
+    },
+    {
+      "schema": "sjo",
+      "status": "changes",
+      "steps": 1
+    },
+    {
+      "schema": "gpp",
+      "status": "no_changes",
+      "steps": 0
+    },
+    {
+      "schema": "rospbu",
+      "status": "no_changes",
+      "steps": 0
+    }
+  ],
+  "destructive_changes": 1,
+  "approval_required": true,
+  "non_transactional_steps": 1
+}

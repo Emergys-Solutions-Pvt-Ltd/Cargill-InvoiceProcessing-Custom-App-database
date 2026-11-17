@@ -1,0 +1,19 @@
+{
+  "digest": "e6c777fc4bccc29dad9195495e193980b3921cf75dd54c48957773b97cae7383",
+  "environment": "dev",
+  "approval_required": true,
+  "changes": [
+    {
+      "schema": "app",
+      "group": 0,
+      "type": "function",
+      "operation": "drop",
+      "path": "app.usp_mailbox_list_for_application",
+      "sql": "DROP FUNCTION IF EXISTS usp_mailbox_list_for_application(text);",
+      "non_transactional": false,
+      "category": "breaking",
+      "approval_required": true,
+      "reason": "drops function: callers relying on it break"
+    }
+  ]
+}

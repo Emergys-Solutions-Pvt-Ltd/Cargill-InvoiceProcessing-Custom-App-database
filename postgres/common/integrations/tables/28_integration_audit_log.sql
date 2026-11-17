@@ -5,8 +5,8 @@
 -- details lists changed field names and outcomes, never values of secrets.
 -- Rows survive the integration (integration_id is cleared, details keep its name).
 -- Depends on: app.integrations, app_auth.users
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.integration_audit_log (
     id              uuid DEFAULT gen_random_uuid() CONSTRAINT pk_integration_audit_log PRIMARY KEY,
@@ -18,5 +18,3 @@ CREATE TABLE IF NOT EXISTS app.integration_audit_log (
 );
 
 CREATE INDEX IF NOT EXISTS ix_integration_audit_integration ON app.integration_audit_log (integration_id, created_at DESC);
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

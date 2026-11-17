@@ -26,6 +26,41 @@ Written for a future developer who has no context.
 
 ---
 
+## 2026-11-16 — DACPAC-style database project: build, pgschema plans, Vela pipeline (Feature: database-devops)
+**Agent:** database-agent · **Status:** Done locally (no real environment deployed) · **Handoffs:** none
+
+### What changed
+- `docs/ASSESSMENT.md` — phase-1 assessment (inventory, verified tool behaviour, risks).
+- Table files folded declaratively: every UPGRADES section merged into its `CREATE TABLE` (verified: a build of the new
+  files and of the old files are identical for pgschema in all 5 schemas). Reference rows moved to
+  `postgres/postdeploy/{10_applications_db_schema,20_statuses,30_master_data_entities}.sql`; schemas / default privileges
+  to `postgres/predeploy/00_schemas.sql`; `postgres/objects.sql` = ordered object manifest.
+- `postgres/deploy_schema.sql` — now local bootstrap only (predeploy + objects.sql + postdeploy).
+- `common/shared/migrations/ids_to_uuid.sql` moved to `ManualMigrations/Schema/2026-11-12_ids_to_uuid.sql`.
+- `postgres/seed_master_data.sql` — fixed: updated the removed `app.invoices`; now updates each app's invoice table
+  (fresh docker databases failed to seed before).
+- New: `Build/{common,build-schema,validate-schema,generate-plan,deploy,verify}.sh`, `Build/lib/dbproject.py`,
+  `config/project.conf`, `config/environments/{dev,uat,prod,local}.env`, `Docker/Dockerfile`, `.vela.yml`, `.sqlfluff`,
+  `.gitattributes`, `.gitignore`, `.dockerignore`, `tests/deploy/{scenarios,run-local}.sh`, `docs/DEPLOYMENT.md`,
+  `ManualMigrations/README.md`; README / CLAUDE.md / DECISIONS (D-DB-004) updated.
+
+### Why
+User request: source-controlled PostgreSQL project with build, validation, schema comparison, generated deployment
+SQL + JSON plan, DEV/UAT/PROD deployments through Vela, open-source tools only.
+
+### Cross-repo impact
+- backend: `docker-compose.yml` still mounts `postgres/` and runs `deploy_schema.sql` + `seed.sql` (still works).
+  No object definitions changed.
+
+### New env vars / dependencies / commands for the user
+- Vela repo secrets `{dev,uat,prod}_db_{host,port,name,user,password}`; tool image to publish (replace `TOOLS_IMAGE`).
+- `bash tests/deploy/run-local.sh` (Docker) runs the deployment scenario tests.
+
+### Still to do / known issues
+- Not run in Vela or against Supabase yet (no access): first DEV run must be watched. `dev` / `uat` branches do not exist yet.
+
+---
+
 ## 2026-11-16 — Mailbox settings + Inbox objects converted from integer ids to uuid (Feature: email-configuration + email-inbox)
 **Agent:** database-agent · **Status:** Done (not deployed; nothing executed against any DB) · **Handoffs:** none (contract in parent `DECISIONS.md` D-024, D-025)
 

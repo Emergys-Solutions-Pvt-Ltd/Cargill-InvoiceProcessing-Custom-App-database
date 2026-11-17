@@ -5,8 +5,8 @@
 -- 's3' = object key storage_path in storage_bucket (layout <App>/<YYYY>/<Mon>/<file name>).
 -- Checksum + ETag for integrity checks. Attachment ids are unique per app.
 -- Depends on: sjo.sjo_invoices, sjo.invoice_source_emails
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS sjo.invoice_attachments (
     id                  uuid DEFAULT gen_random_uuid() CONSTRAINT pk_sjo_attachments PRIMARY KEY,
@@ -39,5 +39,3 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_sjo_attachments_s3_object
 -- Migration of local files to S3 pages through local rows
 CREATE INDEX IF NOT EXISTS ix_sjo_attachments_provider ON sjo.invoice_attachments (storage_provider, id);
 CREATE INDEX IF NOT EXISTS ix_sjo_attachments_source_email ON sjo.invoice_attachments (source_email_id);
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

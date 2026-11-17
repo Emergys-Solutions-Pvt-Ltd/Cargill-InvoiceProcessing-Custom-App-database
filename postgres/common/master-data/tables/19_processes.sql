@@ -1,7 +1,7 @@
 -- =====================================================================
 -- app.processes - Configuration > Processes (business processes handled by the apps)
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.processes (
     id          uuid DEFAULT gen_random_uuid() CONSTRAINT pk_processes PRIMARY KEY,
@@ -16,5 +16,3 @@ CREATE TABLE IF NOT EXISTS app.processes (
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_processes_code ON app.processes (lower(code));
 CREATE UNIQUE INDEX IF NOT EXISTS uq_processes_name ON app.processes (lower(name));
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

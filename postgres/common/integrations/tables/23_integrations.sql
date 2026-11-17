@@ -7,8 +7,8 @@
 -- source_system identifies the source for invoice de-duplication (invoice_external_refs),
 -- so it must stay stable for the life of the source system (e.g. 'S4P-100').
 -- Depends on: app_auth.users
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.integrations (
     id                  uuid DEFAULT gen_random_uuid() CONSTRAINT pk_integrations PRIMARY KEY,
@@ -46,5 +46,3 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_integrations_name ON app.integrations (lowe
 -- Scheduler: integrations due for an automatic run
 CREATE INDEX IF NOT EXISTS ix_integrations_due ON app.integrations (next_run_at)
     WHERE auto_sync_enabled AND is_active;
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

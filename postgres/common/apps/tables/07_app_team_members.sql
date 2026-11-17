@@ -1,8 +1,8 @@
 -- =====================================================================
 -- app.app_team_members - team access list per module (Admin Configuration)
 -- Depends on: app.app_modules, app.teams, app_auth.users
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.app_team_members (
     id          uuid DEFAULT gen_random_uuid() CONSTRAINT pk_app_team_members PRIMARY KEY,
@@ -16,5 +16,3 @@ CREATE TABLE IF NOT EXISTS app.app_team_members (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_team_members ON app.app_team_members (module_id, lower(email));
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

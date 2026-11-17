@@ -4,8 +4,8 @@
 -- random file name); this row keeps the original name and where the file is.
 -- storage_path is relative to the backend storage root; never expose it to browsers.
 -- Depends on: app.mailbox_emails
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.mailbox_email_attachments (
     id                  uuid DEFAULT gen_random_uuid() CONSTRAINT pk_mailbox_email_attachments PRIMARY KEY,
@@ -30,27 +30,5 @@ CREATE INDEX IF NOT EXISTS ix_mailbox_attachments_email ON app.mailbox_email_att
 CREATE UNIQUE INDEX IF NOT EXISTS uq_mailbox_attachments_graph_id
     ON app.mailbox_email_attachments (mailbox_email_id, graph_attachment_id) WHERE graph_attachment_id IS NOT NULL;
 
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----
-ALTER TABLE app.mailbox_email_attachments
-    ADD COLUMN IF NOT EXISTS storage_provider varchar(20) NOT NULL DEFAULT 'local';
-ALTER TABLE app.mailbox_email_attachments
-    ADD COLUMN IF NOT EXISTS storage_bucket varchar(255) NULL;
-ALTER TABLE app.mailbox_email_attachments
-    ADD COLUMN IF NOT EXISTS content_sha256 char(64) NULL;
-ALTER TABLE app.mailbox_email_attachments
-    ADD COLUMN IF NOT EXISTS storage_etag varchar(200) NULL;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint
-        WHERE conrelid = 'app.mailbox_email_attachments'::regclass
-          AND conname = 'ck_mailbox_attachments_provider'
-    ) THEN
-        ALTER TABLE app.mailbox_email_attachments
-            ADD CONSTRAINT ck_mailbox_attachments_provider
-            CHECK (storage_provider IN ('local', 's3') AND (storage_provider = 'local' OR storage_bucket IS NOT NULL));
-    END IF;
-END $$;
-
---About graph_attachment_id (an addition to the plan): if the poller crashes after saving an attachment row and retries, the unique index stops the same PDF being added twice.
+-- Note: about graph_attachment_id (an addition to the plan): if the poller crashes after saving an
+-- attachment row and retries, the unique index stops the same PDF being added twice.

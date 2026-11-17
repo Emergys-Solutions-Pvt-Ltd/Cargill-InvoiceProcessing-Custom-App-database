@@ -3,9 +3,9 @@
 -- Each app invoice table (gpp.gpp_invoices, sjo.sjo_invoices, rospbu.rospbu_invoices) references
 -- statuses.code with ON UPDATE CASCADE, so renaming a
 -- code updates existing invoices and a status in use cannot be deleted.
--- The four core statuses are system data (inserted here, not in seed.sql).
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- The four core statuses are system data: postdeploy/20_statuses.sql (not seed.sql).
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.statuses (
     id          uuid DEFAULT gen_random_uuid() CONSTRAINT pk_statuses PRIMARY KEY,
@@ -20,13 +20,3 @@ CREATE TABLE IF NOT EXISTS app.statuses (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_statuses_name ON app.statuses (lower(name));
-
--- Core workflow statuses (required by existing invoices)
-INSERT INTO app.statuses (code, name, description, color, sort_order) VALUES
-    ('Pending',   'Pending',   'Received, waiting for review',  'warning', 10),
-    ('Approved',  'Approved',  'Reviewed and approved',         'success', 20),
-    ('Processed', 'Processed', 'Posted for payment',            'info',    30),
-    ('Rejected',  'Rejected',  'Rejected during review',        'danger',  40)
-ON CONFLICT (code) DO NOTHING;
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

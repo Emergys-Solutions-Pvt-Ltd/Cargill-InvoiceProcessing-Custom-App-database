@@ -1,7 +1,7 @@
 -- =====================================================================
 -- app.business_units - Configuration > Business units (BUs)
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.business_units (
     id          uuid DEFAULT gen_random_uuid() CONSTRAINT pk_business_units PRIMARY KEY,
@@ -16,5 +16,3 @@ CREATE TABLE IF NOT EXISTS app.business_units (
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_business_units_code ON app.business_units (lower(code));
 CREATE UNIQUE INDEX IF NOT EXISTS uq_business_units_name ON app.business_units (lower(name));
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

@@ -1,0 +1,359 @@
+# =====================================================================================================
+# Vela pipeline - PostgreSQL database project (build, validate, plan, apply, verify)
+# Syntax checked against the Vela v0.26 docs and `vela validate pipeline` (CLI v0.28.2).
+#
+# Promotion: feature/* --PR--> dev --PR--> uat --PR--> main
+#   pull_request (any branch)  build + validate only (no target credentials)
+#   push dev                   plan + apply DEV automatically (destructive steps still blocked)
+#   push uat / main            plan only: the step log and artifacts show the plan digest to review
+#   deployment target=dev|uat|prod  plan + apply. uat/prod require parameter approved_plan_digest = the
+#                              reviewed digest (the plan is re-generated and must be identical, otherwise the
+#                              deployment stops); allow_destructive=true is needed for drops.
+#   Create a deployment:  vela add deployment --org <org> --repo <repo> --target prod --ref main \
+#                           --parameter approved_plan_digest=<digest> [--parameter allow_destructive=true]
+#   Who may approve = who may create deployments for this repo (Vela inherits GitHub repo permissions):
+#   restrict "write" access accordingly. Vela has no built-in manual approval gate for deployments.
+#
+# External setup (repo admin): enable the push, pull_request and deployment events; create the 15 repo
+# secrets below (dev|uat|prod _db_host/_db_port/_db_name/_db_user/_db_password) allowing only the push and
+# deployment events; publish the tool image (Docker/Dockerfile) and replace TOOLS_IMAGE below.
+# =====================================================================================================
+version: "1"
+
+deployment:
+  targets: [ dev, uat, prod ]
+  parameters:
+    approved_plan_digest:
+      description: plan digest printed by the plan step you reviewed (required for uat and prod)
+      type: string
+      required: false
+    allow_destructive:
+      description: true to apply a reviewed plan that drops tables, columns, routines or other objects
+      type: bool
+      required: false
+
+# Disposable build / plan database for this build only (trust auth, no password, destroyed with the build)
+services:
+  - name: postgres
+    image: postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    pull: not_present
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+
+environment:
+  BUILD_DB_HOST: postgres
+  BUILD_DB_PORT: "5432"
+  BUILD_DB_USER: postgres
+  BUILD_DB_SSLMODE: disable
+  DB_PORT_DEFAULT: "5432"
+
+secrets:
+  - name: dev_db_host
+    key: Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database/dev_db_host
+    engine: native
+    type: repo
+  - name: dev_db_port
+    key: Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database/dev_db_port
+    engine: native
+    type: repo
+  - name: dev_db_name
+    key: Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database/dev_db_name
+    engine: native
+    type: repo
+  - name: dev_db_user
+    key: Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database/dev_db_user
+    engine: native
+    type: repo
+  - name: dev_db_password
+    key: Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database/dev_db_password
+    engine: native
+    type: repo
+  - name: uat_db_host
+    key: Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database/uat_db_host
+    engine: native
+    type: repo
+  - name: uat_db_port
+    key: Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database/uat_db_port
+    engine: native
+    type: repo
+  - name: uat_db_name
+    key: Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database/uat_db_name
+    engine: native
+    type: repo
+  - name: uat_db_user
+    key: Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database/uat_db_user
+    engine: native
+    type: repo
+  - name: uat_db_password
+    key: Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database/uat_db_password
+    engine: native
+    type: repo
+  - name: prod_db_host
+    key: Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database/prod_db_host
+    engine: native
+    type: repo
+  - name: prod_db_port
+    key: Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database/prod_db_port
+    engine: native
+    type: repo
+  - name: prod_db_name
+    key: Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database/prod_db_name
+    engine: native
+    type: repo
+  - name: prod_db_user
+    key: Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database/prod_db_user
+    engine: native
+    type: repo
+  - name: prod_db_password
+    key: Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database/prod_db_password
+    engine: native
+    type: repo
+
+stages:
+  # ---- Stage 1-2: checkout (automatic clone) + tools --------------------------------------------------
+  tools:
+    steps:
+      - name: tool-versions
+        image: TOOLS_IMAGE
+        pull: not_present
+        commands:
+          - printenv VELA_REPO_FULL_NAME VELA_BUILD_BRANCH VELA_BUILD_COMMIT VELA_BUILD_EVENT VELA_BUILD_TARGET || true
+          - pgschema --version
+          - sqlfluff --version
+          - psql --version
+      - name: generated-sql-in-sync
+        image: node:22.20.0-alpine3.22@sha256:dbcedd8aeab47fbc0f4dd4bffa55b7c3c729a707875968d467aaaea42d6225af
+        pull: not_present
+        commands:
+          - node postgres/tools/generate-app-invoice-sql.cjs --check
+
+  # ---- Stage 3-4: build + validate on the disposable PostgreSQL ---------------------------------------
+  build:
+    needs: [ tools ]
+    steps:
+      - name: build-schema
+        image: TOOLS_IMAGE
+        pull: not_present
+        commands:
+          - bash Build/build-schema.sh
+      - name: validate-schema
+        image: TOOLS_IMAGE
+        pull: not_present
+        commands:
+          - bash Build/validate-schema.sh
+        artifacts:
+          paths:
+            - Artifacts/schema.sql
+            - Artifacts/postdeploy.sql
+            - Artifacts/object-manifest.json
+            - Artifacts/build-report.json
+            - Artifacts/validation-report.json
+            - Artifacts/lint-report.json
+            - Artifacts/logs/*.log
+
+  # ---- Stage 5-9 per environment: compare, store artifacts, approval, apply, verify -------------------
+  dev:
+    needs: [ build ]
+    steps:
+      - name: dev-plan
+        image: TOOLS_IMAGE
+        pull: not_present
+        secrets:
+          - source: dev_db_host
+            target: db_host
+          - source: dev_db_port
+            target: db_port
+          - source: dev_db_name
+            target: db_name
+          - source: dev_db_user
+            target: db_user
+          - source: dev_db_password
+            target: db_password
+        environment:
+          DEPLOY_ENV: dev
+        commands:
+          - bash Build/deploy.sh plan
+        artifacts:
+          paths:
+            - Artifacts/deployment.sql
+            - Artifacts/deployment-plan.json
+            - Artifacts/deployment-summary.json
+            - Artifacts/destructive-changes.json
+            - Artifacts/plans/*
+            - Artifacts/deployment-report.*
+        ruleset:
+          branch: [ dev ]
+          event: [ push, deployment ]
+      - name: dev-apply
+        image: TOOLS_IMAGE
+        pull: not_present
+        secrets:
+          - source: dev_db_host
+            target: db_host
+          - source: dev_db_port
+            target: db_port
+          - source: dev_db_name
+            target: db_name
+          - source: dev_db_user
+            target: db_user
+          - source: dev_db_password
+            target: db_password
+        environment:
+          DEPLOY_ENV: dev
+        commands:
+          - bash Build/deploy.sh apply
+        artifacts:
+          paths:
+            - Artifacts/deployment-report.*
+            - Artifacts/verify-report.json
+            - Artifacts/logs/*.log
+        ruleset:
+          branch: [ dev ]
+          event: [ push ]
+      - name: dev-apply-deployment
+        image: TOOLS_IMAGE
+        pull: not_present
+        secrets:
+          - source: dev_db_host
+            target: db_host
+          - source: dev_db_port
+            target: db_port
+          - source: dev_db_name
+            target: db_name
+          - source: dev_db_user
+            target: db_user
+          - source: dev_db_password
+            target: db_password
+        environment:
+          DEPLOY_ENV: dev
+        commands:
+          - bash Build/deploy.sh apply
+        artifacts:
+          paths:
+            - Artifacts/deployment-report.*
+            - Artifacts/verify-report.json
+            - Artifacts/logs/*.log
+        ruleset:
+          event: [ deployment ]
+          target: [ dev ]
+          branch: [ dev ]
+
+  uat:
+    needs: [ build ]
+    steps:
+      - name: uat-plan
+        image: TOOLS_IMAGE
+        pull: not_present
+        secrets:
+          - source: uat_db_host
+            target: db_host
+          - source: uat_db_port
+            target: db_port
+          - source: uat_db_name
+            target: db_name
+          - source: uat_db_user
+            target: db_user
+          - source: uat_db_password
+            target: db_password
+        environment:
+          DEPLOY_ENV: uat
+        commands:
+          - bash Build/deploy.sh plan
+        artifacts:
+          paths:
+            - Artifacts/deployment.sql
+            - Artifacts/deployment-plan.json
+            - Artifacts/deployment-summary.json
+            - Artifacts/destructive-changes.json
+            - Artifacts/plans/*
+            - Artifacts/deployment-report.*
+        ruleset:
+          branch: [ uat ]
+          event: [ push, deployment ]
+      - name: uat-apply
+        image: TOOLS_IMAGE
+        pull: not_present
+        secrets:
+          - source: uat_db_host
+            target: db_host
+          - source: uat_db_port
+            target: db_port
+          - source: uat_db_name
+            target: db_name
+          - source: uat_db_user
+            target: db_user
+          - source: uat_db_password
+            target: db_password
+        environment:
+          DEPLOY_ENV: uat
+        commands:
+          - bash Build/deploy.sh apply
+        artifacts:
+          paths:
+            - Artifacts/deployment-report.*
+            - Artifacts/verify-report.json
+            - Artifacts/logs/*.log
+        ruleset:
+          event: [ deployment ]
+          target: [ uat ]
+          branch: [ uat ]
+
+  prod:
+    needs: [ build ]
+    steps:
+      - name: prod-plan
+        image: TOOLS_IMAGE
+        pull: not_present
+        secrets:
+          - source: prod_db_host
+            target: db_host
+          - source: prod_db_port
+            target: db_port
+          - source: prod_db_name
+            target: db_name
+          - source: prod_db_user
+            target: db_user
+          - source: prod_db_password
+            target: db_password
+        environment:
+          DEPLOY_ENV: prod
+        commands:
+          - bash Build/deploy.sh plan
+        artifacts:
+          paths:
+            - Artifacts/deployment.sql
+            - Artifacts/deployment-plan.json
+            - Artifacts/deployment-summary.json
+            - Artifacts/destructive-changes.json
+            - Artifacts/plans/*
+            - Artifacts/deployment-report.*
+        ruleset:
+          branch: [ main ]
+          event: [ push, deployment ]
+      - name: prod-apply
+        image: TOOLS_IMAGE
+        pull: not_present
+        secrets:
+          - source: prod_db_host
+            target: db_host
+          - source: prod_db_port
+            target: db_port
+          - source: prod_db_name
+            target: db_name
+          - source: prod_db_user
+            target: db_user
+          - source: prod_db_password
+            target: db_password
+        environment:
+          DEPLOY_ENV: prod
+        commands:
+          - bash Build/deploy.sh apply
+        artifacts:
+          paths:
+            - Artifacts/deployment-report.*
+            - Artifacts/verify-report.json
+            - Artifacts/logs/*.log
+        ruleset:
+          event: [ deployment ]
+          target: [ prod ]
+          branch: [ main ]

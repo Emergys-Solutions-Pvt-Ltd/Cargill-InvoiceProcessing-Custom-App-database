@@ -1,27 +1,18 @@
 -- =====================================================================
 -- app.teams - team names used on the Admin Configuration screen
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.teams (
     id      uuid DEFAULT gen_random_uuid() CONSTRAINT pk_teams PRIMARY KEY,
-    name    varchar(100)    NOT NULL CONSTRAINT uq_teams_name UNIQUE
+    name    varchar(150)    NOT NULL CONSTRAINT uq_teams_name UNIQUE,
+    -- Teams (queues) are master data managed under Settings > Configuration
+    code        varchar(30)    NULL,
+    description varchar(500)   NULL,
+    sort_order  integer        NOT NULL DEFAULT 0,
+    is_active   boolean        NOT NULL DEFAULT true,
+    created_at  timestamptz(0) NOT NULL DEFAULT now(),
+    updated_at  timestamptz(0) NOT NULL DEFAULT now()
 );
 
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----
--- Teams (queues) became master data managed under Settings > Configuration
-ALTER TABLE app.teams ADD COLUMN IF NOT EXISTS code        varchar(30)    NULL;
-ALTER TABLE app.teams ADD COLUMN IF NOT EXISTS description varchar(500)   NULL;
-ALTER TABLE app.teams ADD COLUMN IF NOT EXISTS sort_order  integer        NOT NULL DEFAULT 0;
-ALTER TABLE app.teams ADD COLUMN IF NOT EXISTS is_active   boolean        NOT NULL DEFAULT true;
-ALTER TABLE app.teams ADD COLUMN IF NOT EXISTS created_at  timestamptz(0) NOT NULL DEFAULT now();
-ALTER TABLE app.teams ADD COLUMN IF NOT EXISTS updated_at  timestamptz(0) NOT NULL DEFAULT now();
--- Guarded: once widened, views (vw_invoice_summary) depend on the column and block ALTER TYPE
-DO $$
-BEGIN
-    IF (SELECT character_maximum_length FROM information_schema.columns
-        WHERE table_schema = 'app' AND table_name = 'teams' AND column_name = 'name') < 150 THEN
-        ALTER TABLE app.teams ALTER COLUMN name TYPE varchar(150);
-    END IF;
-END $$;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_teams_code ON app.teams (lower(code)) WHERE code IS NOT NULL;

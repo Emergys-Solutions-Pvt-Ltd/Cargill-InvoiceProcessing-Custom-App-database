@@ -5,8 +5,8 @@
 -- Common core columns (identical in gpp / sjo / rospbu) + the GPP fields.
 -- Depends on: app.app_modules, app.vendors, app.country_stations, app.statuses, app.processes,
 --             app.cities, app.teams, app_auth.users
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS gpp.gpp_invoices (
     id                          uuid DEFAULT gen_random_uuid() CONSTRAINT pk_gpp_invoices PRIMARY KEY,
@@ -118,6 +118,4 @@ CREATE INDEX IF NOT EXISTS ix_gpp_invoices_module_received ON gpp.gpp_invoices (
 CREATE INDEX IF NOT EXISTS ix_gpp_invoices_vendor          ON gpp.gpp_invoices (vendor_id);
 CREATE INDEX IF NOT EXISTS ix_gpp_invoices_team            ON gpp.gpp_invoices (team_id);
 CREATE INDEX IF NOT EXISTS ix_gpp_invoices_assigned_user   ON gpp.gpp_invoices (assigned_user_id);
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----
 
