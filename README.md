@@ -75,6 +75,23 @@ after planning (fingerprint).
    ```
 4. Open a pull request (`feature/*` -> `dev`): the pipeline builds and validates. Merge -> DEV deploys.
 
+### Local database on Docker
+
+`docker-compose.yml` runs the same deployment against a persistent PostgreSQL 17 container
+(`localhost:5433`, data in the `dbdata` volume). Put `DB_PASSWORD=...` (and optionally `DB_NAME`, `DB_USER`,
+`DB_PUBLISH_PORT`) in `database/.env` (git-ignored), then:
+
+```bash
+docker compose up -d --wait db builddb
+```
+
+```bash
+docker compose run --rm deploy
+```
+
+Re-run `deploy` after changing SQL: it plans and applies only the differences. `docker compose run --rm seed`
+loads the demo data (empty database only; demo logins use the password `password`).
+
 ## Environments and promotion
 
 | Branch | Environment | What happens |

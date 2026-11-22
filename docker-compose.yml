@@ -1,0 +1,93 @@
+# =====================================================================================================
+# Local Docker deployment of the database project (PostgreSQL 17), using the same scripts as the pipeline.
+#
+#   1. create database/.env (git-ignored) with:  DB_PASSWORD=<a strong password>
+#      optional: DB_NAME (latam_invoice), DB_USER (latam_admin), DB_PUBLISH_PORT (5433)
+#   2. docker compose up -d db builddb                 PostgreSQL target + disposable build/plan server
+#   3. docker compose run --rm deploy                  build, validate, plan, apply, verify
+#      docker compose run --rm deploy Build/deploy.sh plan      (plan only, review Artifacts/)
+#      docker compose run --rm seed                    optional demo data (empty database only; demo logins)
+#
+# Connect: host localhost, port ${DB_PUBLISH_PORT:-5433}, database / user / password from .env
+# Reports: Artifacts/deployment-report.md. Data lives in the named volume "dbdata" (docker compose down -v removes it).
+# =====================================================================================================
+name: latam-invoice-db
+
+x-pg-image: &pg_image postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+
+services:
+  db:
+    image: *pg_image
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-latam_invoice}
+      POSTGRES_USER: ${DB_USER:-latam_admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in database/.env}
+    ports:
+      - "127.0.0.1:${DB_PUBLISH_PORT:-5433}:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Disposable build / plan database (no data worth keeping, not published, trust auth inside the network only)
+  builddb:
+    image: *pg_image
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  deploy:
+    image: latam-invoice-db-tools:dev
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile
+    profiles: [tools]
+    depends_on:
+      db:
+        condition: service_healthy
+      builddb:
+        condition: service_healthy
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      DEPLOY_ENV: local
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-latam_invoice}
+      DB_USER: ${DB_USER:-latam_admin}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in database/.env}
+      DB_SSLMODE: disable
+      BUILD_DB_HOST: builddb
+      BUILD_DB_USER: postgres
+      BUILD_DB_SSLMODE: disable
+    entrypoint: ["bash", "-c", "if [ $$# -gt 0 ]; then exec bash \"$$@\"; fi; bash Build/validate-schema.sh && bash Build/deploy.sh plan && bash Build/deploy.sh apply", "deploy"]
+
+  seed:
+    image: latam-invoice-db-tools:dev
+    profiles: [tools]
+    depends_on:
+      db:
+        condition: service_healthy
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      PGHOST: db
+      PGDATABASE: ${DB_NAME:-latam_invoice}
+      PGUSER: ${DB_USER:-latam_admin}
+      PGPASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in database/.env}
+    entrypoint: ["psql", "-X", "-q", "-v", "ON_ERROR_STOP=1", "-f", "postgres/seed.sql"]
+
+volumes:
+  dbdata:
