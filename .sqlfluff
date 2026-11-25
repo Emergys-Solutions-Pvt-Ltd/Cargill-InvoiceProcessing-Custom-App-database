@@ -1,0 +1,22 @@
+[sqlfluff]
+dialect = postgres
+# Raw templater: the files are plain SQL. The default Jinja templater fails on the generator header
+# comments ("40_{{T}}.sql.tpl").
+templater = raw
+max_line_length = 160
+processes = 4
+# Gate = parse errors + every rule the codebase already satisfies. The rules below are existing style debt
+# (aligned column layout, implicit aliases, ...): they are excluded so the gate is green today, and any
+# other rule fails the build for new code. Remove an exclusion once its violations are fixed.
+exclude_rules = LT01, LT02, LT05, LT08, LT09, LT11, LT12, LT14,
+    AL01, AL03, AL08,
+    AM03, AM05,
+    CP02, CP04, CP05,
+    RF01, RF02, RF04,
+    ST06, ST09
+
+[sqlfluff:indentation]
+tab_space_size = 4
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = upper

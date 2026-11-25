@@ -6,8 +6,8 @@
 -- details holds field names and sanitized values only - never credentials or tokens.
 -- Purged together with its job (retention policy, usp_integration_purge_history).
 -- Depends on: app.integration_sync_jobs, app.integration_profiles
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.integration_sync_errors (
     id              uuid DEFAULT gen_random_uuid() CONSTRAINT pk_integration_sync_errors PRIMARY KEY,
@@ -22,5 +22,3 @@ CREATE TABLE IF NOT EXISTS app.integration_sync_errors (
 );
 
 CREATE INDEX IF NOT EXISTS ix_sync_errors_job ON app.integration_sync_errors (job_id, id);
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

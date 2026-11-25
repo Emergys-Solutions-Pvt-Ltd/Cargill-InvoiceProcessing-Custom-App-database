@@ -5,8 +5,8 @@
 -- Common core columns (identical in gpp / sjo / rospbu) + the SJO fields.
 -- Depends on: app.app_modules, app.vendors, app.country_stations, app.statuses, app.processes,
 --             app.cities, app.teams, app_auth.users, app.countries, app.business_units, sjo.erp_systems
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS sjo.sjo_invoices (
     id                          uuid DEFAULT gen_random_uuid() CONSTRAINT pk_sjo_invoices PRIMARY KEY,
@@ -68,6 +68,4 @@ CREATE INDEX IF NOT EXISTS ix_sjo_invoices_team            ON sjo.sjo_invoices (
 CREATE INDEX IF NOT EXISTS ix_sjo_invoices_assigned_user   ON sjo.sjo_invoices (assigned_user_id);
 
 CREATE INDEX IF NOT EXISTS ix_sjo_invoices_id_fiscal       ON sjo.sjo_invoices (id_fiscal);
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----
 

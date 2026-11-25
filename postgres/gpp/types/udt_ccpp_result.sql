@@ -2,7 +2,7 @@
 -- gpp.udt_ccpp_result - RESPONSE type: CCPPs tab row
 -- Element type of udt_invoice_detail_result.ccpps, and the row type for the standalone
 -- gpp.usp_ccpp_list / gpp.usp_ccpp_save CRUD pair (CCPP tab). Fields after tons_fc are the
--- legacy Salesforce "GP CCPP" object fields - see gpp.invoice_ccpps' UPGRADES section.
+-- legacy Salesforce "GP CCPP" object fields - see gpp.invoice_ccpps (gpp/tables/45_invoice_ccpps.sql).
 -- (Re)created by deploy_schema.sql, which drops all usp_/udt_ objects first.
 -- =====================================================================
 CREATE TYPE gpp.udt_ccpp_result AS (

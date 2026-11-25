@@ -2,8 +2,8 @@
 -- app.app_modules - UI route slugs (/app/:appId) mapped to their parent application
 -- e.g. gp-tool, freight-processing -> GP ; sjo-index-processing -> sjo
 -- Depends on: app.applications
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.app_modules (
     id              uuid DEFAULT gen_random_uuid() CONSTRAINT pk_app_modules PRIMARY KEY,
@@ -13,5 +13,3 @@ CREATE TABLE IF NOT EXISTS app.app_modules (
     invoice_prefix  varchar(30)     NOT NULL,                       -- used for INV-<PREFIX>-nnnn ids
     is_active       boolean         NOT NULL DEFAULT true
 );
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

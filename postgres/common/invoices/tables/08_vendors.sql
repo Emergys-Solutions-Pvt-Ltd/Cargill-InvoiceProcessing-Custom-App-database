@@ -1,7 +1,7 @@
 -- =====================================================================
 -- app.vendors - invoice vendors, unique by CUIT (Argentine tax id)
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.vendors (
     id          uuid DEFAULT gen_random_uuid() CONSTRAINT pk_vendors PRIMARY KEY,
@@ -10,5 +10,3 @@ CREATE TABLE IF NOT EXISTS app.vendors (
     is_active   boolean         NOT NULL DEFAULT true,
     created_at  timestamptz(0)  NOT NULL DEFAULT now()
 );
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

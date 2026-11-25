@@ -1,7 +1,7 @@
 -- =====================================================================
 -- app.country_stations - "Country Station" values such as "ARG - Rosario Port"
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.country_stations (
     id              uuid DEFAULT gen_random_uuid() CONSTRAINT pk_country_stations PRIMARY KEY,
@@ -10,5 +10,3 @@ CREATE TABLE IF NOT EXISTS app.country_stations (
     display_name    varchar(160)    GENERATED ALWAYS AS (country_code || ' - ' || station_name) STORED,
     CONSTRAINT uq_country_stations UNIQUE (country_code, station_name)
 );
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

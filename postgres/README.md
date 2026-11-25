@@ -16,24 +16,31 @@ The auth schema is `app_auth`, not `auth`: Supabase reserves `auth` for Supabase
 
 **Keys are uuids.** Every table's `id` (and every column that references one) is `uuid DEFAULT
 gen_random_uuid()`; the API and the frontend pass ids around as strings. External ids (SAP / OnBase
-keys, `invoice_code`) are unchanged. Databases deployed with integer keys are converted by
-`deploy_schema.sql` itself through `common/shared/migrations/ids_to_uuid.sql`: it adds uuid columns,
-remaps every foreign key (and the ids inside `integration_profiles.profile_stats`), recreates the
-constraints and indexes, then swaps the columns (so on such a database `id` is the last column).
-It is a no-op once no integer keys remain. Sign-in tokens issued before the conversion carry an
-integer subject and are rejected: users sign in again.
+keys, `invoice_code`) are unchanged. Databases deployed with integer keys were converted by the
+one-time `../ManualMigrations/Schema/2026-11-12_ids_to_uuid.sql` (adds uuid columns, remaps every foreign
+key and the ids inside `integration_profiles.profile_stats`, recreates the constraints and indexes, then
+swaps the columns - so on such a database `id` is the last column; column order does not affect the diff).
+Sign-in tokens issued before the conversion carry an integer subject and are rejected: users sign in again.
+
+**Deployments.** DEV / UAT / PROD are deployed by the pipeline (`../Build/deploy.sh`, see `../README.md`):
+the build compiles these files into a model and pgschema generates a reviewed diff per schema.
+`objects.sql` is the ordered manifest of the object files; `predeploy/` creates the schemas,
+`postdeploy/` loads reference data. `deploy_schema.sql` remains only for local / docker databases.
 Master-data lists record their table's schema in `app.master_data_entities.schema_name` (erp-systems: sjo).
 
 ```
 postgres/
-  deploy_schema.sql      Create OR update the schema: one transaction, safe to re-run, never drops data
+  objects.sql            Ordered manifest of every object file (used by the build and by deploy_schema.sql)
+  predeploy/             Schemas and default privileges (run before every deployment)
+  postdeploy/            Idempotent reference data: statuses, master-data registry, applications.db_schema
+  deploy_schema.sql      LOCAL bootstrap: one transaction, recreates programmability, creates missing tables
   reset_schema.sql       DESTRUCTIVE: DROP SCHEMA app CASCADE, then deploy (dev / demo only)
   seed.sql               Demo data mirroring the frontend mock (expects empty tables)
   seed_master_data.sql   Demo Configuration data (countries, states, cities, BUs, team codes, processes);
                          re-runnable, so it can be applied to an existing database
   auth/                  users, user_applications, usp_user_*, vw_user_summary (sign-in, User Access Management)
   common/                objects every app shares
-    shared/              udt_code_result, udt_row_count_result, ufn_like_contains; migrations/ids_to_uuid.sql
+    shared/              udt_code_result, udt_row_count_result, ufn_like_contains
     apps/                applications, app_modules, app_settings, app_team_members
     master-data/         teams, countries, states, cities, business_units, statuses, processes, registry
     lookups/             usp_lookup_get_all (dropdown sources)
@@ -48,7 +55,7 @@ postgres/
 
 Each module folder holds tables/ (one file per table, globally numbered in dependency order),
 types/ (udt_*_input request and udt_*_result response composite types), functions/ (ufn_*),
-procedures/ (usp_* functions, in the module's schema) and views/ (vw_*). deploy_schema.sql includes them all.
+procedures/ (usp_* functions, in the module's schema) and views/ (vw_*). objects.sql lists them all.
 ```
 
 ## Running
@@ -187,7 +194,7 @@ Central American countries, BU `CFN` and ERPs `JDE` / `SAP`.
 
 `gpp.invoice_ccpps` (one invoice → many rows) already backed the `ccpps[]` array embedded in
 `usp_invoice_get_by_code`'s response (used for "is CCPP Linked" and the per-row `product`). Its
-UPGRADES section adds 52 more fields from a separate legacy Salesforce "GP CCPP" object (a
+CREATE TABLE also holds 52 more fields from a separate legacy Salesforce "GP CCPP" object (a
 55-field export reconciled against this table 2026-11-02 - `../shared/handoffs/database.md`; 3
 fields not carried over: the invoice link itself and two SF formulas derivable via the FK) so the
 new CCPP tab (its own view/update/add screen, distinct from the unchanged Details tab) has a real
@@ -219,12 +226,15 @@ invoice per source document) and the audit log. Functions under `common/integrat
 
 ## Changing the schema
 
-- **Tables**: append guarded statements to the table file's UPGRADES section, for example
-  `ALTER TABLE app.vendors ADD COLUMN IF NOT EXISTS email varchar(255);`. Leave the
-  `CREATE TABLE` block alone so databases created earlier still receive the change.
-- **Types / functions / views**: edit the file and re-run `deploy_schema.sql`. It drops every
-  `usp_*` / `ufn_*` function, `vw_*` view and `udt_*` type of every module schema and recreates them in one transaction.
-- **New files** must be added to `deploy_schema.sql`, after anything they depend on. New tables also go in
-  `seed.sql` if they need demo data.
+- **Every object file is declarative**: it describes the final shape. Change the `CREATE TABLE` itself
+  (add / change columns, constraints, indexes) - never append `ALTER TABLE`; the deployment plan
+  (pgschema) generates the `ALTER` for existing databases and flags anything destructive for approval.
+  The build rejects DML, `DROP`, `ALTER TABLE` (other than a guarded / plain `ADD CONSTRAINT` for circular
+  foreign keys) and `DO` blocks in object files.
+- **Types / functions / views**: edit the file. The plan uses `CREATE OR REPLACE` (functions) or drop and
+  recreate (views, changed signatures) - signature changes still break the backend: hand off first.
+- **New files** must be added to `objects.sql`, after anything they reference (the build fails otherwise).
+  New tables also go in `seed.sql` if they need demo data. Reference rows go in `postdeploy/`.
+- **Renames and data backfills** are manual migrations (`../ManualMigrations/`): the diff would see drop + add.
 - Functions are not executable by `PUBLIC`. The backend connects as the database owner; if you use
   a dedicated role, grant it `USAGE ON SCHEMA app` and `EXECUTE ON ALL FUNCTIONS IN SCHEMA app`.

@@ -1,7 +1,7 @@
 -- =====================================================================
 -- app.master_data_entities - registry of the Configuration (master data) entities.
 -- app.usp_master_data_* build their SQL from this table, so it doubles as the
--- whitelist of tables those functions may touch. System data: kept in sync here.
+-- whitelist of tables those functions may touch. System data: postdeploy/30_master_data_entities.sql.
 -- Depends on: the master data tables (05, 14-19)
 -- Idempotent. Run through deploy_schema.sql.
 -- =====================================================================
@@ -14,28 +14,6 @@ CREATE TABLE IF NOT EXISTS app.master_data_entities (
     code_required   boolean         NOT NULL DEFAULT false,
     has_color       boolean         NOT NULL DEFAULT false,
     sort_order      integer         NOT NULL DEFAULT 0,
+    schema_name     varchar(63)     NOT NULL DEFAULT 'app',    -- module schema of the table (app = common; erp-systems: sjo)
     CONSTRAINT ck_master_data_entities_parent CHECK ((parent_entity IS NULL) = (parent_column IS NULL))
 );
-
-INSERT INTO app.master_data_entities
-    (entity, table_name, label, parent_entity, parent_column, code_required, has_color, sort_order)
-VALUES
-    ('countries',      'countries',      'Country',       NULL,        NULL,         true,  false, 10),
-    ('states',         'states',         'State',         'countries', 'country_id', false, false, 20),
-    ('cities',         'cities',         'City',          'states',    'state_id',   false, false, 30),
-    ('business-units', 'business_units', 'Business unit', NULL,        NULL,         true,  false, 40),
-    ('teams',          'teams',          'Team',          NULL,        NULL,         false, false, 50),
-    ('statuses',       'statuses',       'Status',        NULL,        NULL,         true,  true,  60),
-    ('processes',      'processes',      'Process',       NULL,        NULL,         true,  false, 70)
-ON CONFLICT (entity) DO UPDATE
-    SET table_name    = EXCLUDED.table_name,
-        label         = EXCLUDED.label,
-        parent_entity = EXCLUDED.parent_entity,
-        parent_column = EXCLUDED.parent_column,
-        code_required = EXCLUDED.code_required,
-        has_color     = EXCLUDED.has_color,
-        sort_order    = EXCLUDED.sort_order;
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----
--- Module schema of the list's table (app = common; e.g. erp-systems lives in sjo)
-ALTER TABLE app.master_data_entities ADD COLUMN IF NOT EXISTS schema_name varchar(63) NOT NULL DEFAULT 'app';

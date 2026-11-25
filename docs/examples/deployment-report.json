@@ -1,0 +1,102 @@
+{
+  "repository": "Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database",
+  "branch": "dev",
+  "commit": "0000000000000000000000000000000000000000",
+  "environment": "dev",
+  "mode": "apply",
+  "status": "failed",
+  "postgres_version": "17.6",
+  "timestamp": "2026-11-16T18:44:47Z",
+  "plan_digest": "e6c777fc4bccc29dad9195495e193980b3921cf75dd54c48957773b97cae7383",
+  "plan_mode": "incremental",
+  "objects_created": [
+    "app.statuses.ix_statuses_sort",
+    "sjo.erp_systems.region"
+  ],
+  "objects_modified": [
+    "app.usp_application_list"
+  ],
+  "objects_deleted": [
+    "app.usp_mailbox_list_for_application"
+  ],
+  "bootstrap": false,
+  "destructive_operations": [
+    {
+      "schema": "app",
+      "group": 0,
+      "type": "function",
+      "operation": "drop",
+      "path": "app.usp_mailbox_list_for_application",
+      "sql": "DROP FUNCTION IF EXISTS usp_mailbox_list_for_application(text);",
+      "non_transactional": false,
+      "category": "breaking",
+      "approval_required": true,
+      "reason": "drops function: callers relying on it break"
+    }
+  ],
+  "summary": {
+    "digest": "e6c777fc4bccc29dad9195495e193980b3921cf75dd54c48957773b97cae7383",
+    "environment": "dev",
+    "mode": "incremental",
+    "has_changes": true,
+    "operations": {
+      "create": 3,
+      "alter": 1,
+      "drop": 1,
+      "recreate": 0
+    },
+    "by_type": {
+      "function:alter": 1,
+      "function:drop": 1,
+      "table.column:create": 1,
+      "table.index:create": 2
+    },
+    "schemas": [
+      {
+        "schema": "app_auth",
+        "status": "no_changes",
+        "steps": 0
+      },
+      {
+        "schema": "app",
+        "status": "changes",
+        "steps": 4
+      },
+      {
+        "schema": "sjo",
+        "status": "changes",
+        "steps": 1
+      },
+      {
+        "schema": "gpp",
+        "status": "no_changes",
+        "steps": 0
+      },
+      {
+        "schema": "rospbu",
+        "status": "no_changes",
+        "steps": 0
+      }
+    ],
+    "destructive_changes": 1,
+    "approval_required": true,
+    "non_transactional_steps": 1
+  },
+  "build": {
+    "status": "succeeded",
+    "files": 192,
+    "objects": 286,
+    "schema_sql_sha256": "d96cc8194648c228b32822d050f6a67a816205bf69f2378d9964475855edc873"
+  },
+  "verification": null,
+  "errors": [
+    "plan rejected by the deployment policy (exit 3)",
+    "the plan contains destructive steps (see destructive-changes.json); re-run with ALLOW_DESTRUCTIVE=true after review"
+  ],
+  "tool_versions": {
+    "pgschema": "1.14.1",
+    "sqlfluff": "4.4.0",
+    "psql": "17.12",
+    "python": "3.12.13"
+  }
+}

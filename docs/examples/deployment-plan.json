@@ -1,0 +1,79 @@
+{
+  "format": "dbproject-plan/1",
+  "digest": "e6c777fc4bccc29dad9195495e193980b3921cf75dd54c48957773b97cae7383",
+  "created_at": "2026-11-16T18:44:46Z",
+  "environment": "dev",
+  "mode": "incremental",
+  "has_changes": true,
+  "target": {
+    "database": "appdb",
+    "host_sha256": "69fcf26a4baf6521",
+    "server_version": "17.6"
+  },
+  "source": {
+    "repository": "Emergys-Solutions-Pvt-Ltd/Cargill-InvoiceProcessing-Custom-App-database",
+    "branch": "dev",
+    "commit": "0000000000000000000000000000000000000000",
+    "schema_sql_sha256": "d96cc8194648c228b32822d050f6a67a816205bf69f2378d9964475855edc873",
+    "predeploy_sql_sha256": "e989887b9e6894f35e13e8406ce28418bc45e4f6180c59f36a7fc9d00723abef",
+    "postdeploy_sql_sha256": "a5dcea4b7bfa1225b90ed6b462b34e8abe00a4c5bdcb97ca81402628d90f10fd"
+  },
+  "pgschema_version": "1.14.1",
+  "schemas": [
+    {
+      "schema": "app_auth",
+      "status": "no_changes",
+      "steps": 0,
+      "plan_file": "plans/app_auth.json",
+      "plan_sha256": "e9ce314c1f38ec5effe7da04818a43847e306c3bcc5734da5105ba79f6e859f6",
+      "source_fingerprint": "f2186ef15e2ebb3c5f7ae6811f522a282ffe874895c038e14e6b0537f3c8653b",
+      "pgschema_version": "1.14.1",
+      "plan_format": "1.0.0"
+    },
+    {
+      "schema": "app",
+      "status": "changes",
+      "steps": 4,
+      "plan_file": "plans/app.json",
+      "plan_sha256": "7073594c0adbf8bdbd4490e0cf0af56bc4006305711cd8592ad608f6604184e7",
+      "source_fingerprint": "7ec994d39f5e71ec6121e2037d76eaa5809fbbdefa4a6b229a170b8d3257c4b3",
+      "pgschema_version": "1.14.1",
+      "plan_format": "1.0.0"
+    },
+    {
+      "schema": "sjo",
+      "status": "changes",
+      "steps": 1,
+      "plan_file": "plans/sjo.json",
+      "plan_sha256": "8731df5ccf6c2870a33a63bcb67c2bd3033637bfd288746a670f47490802ff01",
+      "source_fingerprint": "8bf50c5796086500a70c6487ab7402b68fc221ba6cba4c1cb973013b294ddf0e",
+      "pgschema_version": "1.14.1",
+      "plan_format": "1.0.0"
+    },
+    {
+      "schema": "gpp",
+      "status": "no_changes",
+      "steps": 0,
+      "plan_file": "plans/gpp.json",
+      "plan_sha256": "7e10fea921b406ec4d3147c28d65b01ec612f0c1fbbc3485b0626d82d077b2c7",
+      "source_fingerprint": "e2115d09daac7aa0363861640e820e5e89b8ec680a723b862fb5dddac83dfff9",
+      "pgschema_version": "1.14.1",
+      "plan_format": "1.0.0"
+    },
+    {
+      "schema": "rospbu",
+      "status": "no_changes",
+      "steps": 0,
+      "plan_file": "plans/rospbu.json",
+      "plan_sha256": "50506d8ac7ebbbc4b9a36eca1c06790936bab3e6c548d10a6bd9fc5050fd0d10",
+      "source_fingerprint": "c2f4f39515b685a00771906e6c5a657244fa297c8819343d281f6be70710b21a",
+      "pgschema_version": "1.14.1",
+      "plan_format": "1.0.0"
+    }
+  ],
+  "destructive": {
+    "count": 1,
+    "approval_required": true
+  },
+  "non_transactional_steps": 1
+}

@@ -6,8 +6,8 @@
 -- invoice_attachments.source_email_id. The body is kept as plain text only,
 -- so it can be shown without rendering sender-controlled HTML.
 -- Depends on: rospbu.rospbu_invoices
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS rospbu.invoice_source_emails (
     id              uuid DEFAULT gen_random_uuid() CONSTRAINT pk_rospbu_source_emails PRIMARY KEY,
@@ -24,5 +24,3 @@ CREATE TABLE IF NOT EXISTS rospbu.invoice_source_emails (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_rospbu_source_emails_invoice ON rospbu.invoice_source_emails (invoice_id);
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

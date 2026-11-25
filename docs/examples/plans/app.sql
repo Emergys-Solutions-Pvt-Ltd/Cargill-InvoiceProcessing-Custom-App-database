@@ -1,0 +1,32 @@
+DROP FUNCTION IF EXISTS usp_mailbox_list_for_application(text);
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_statuses_sort ON app.statuses (sort_order);
+
+-- pgschema:wait
+SELECT 
+    COALESCE(i.indisvalid, false) as done,
+    CASE 
+        WHEN p.blocks_total > 0 THEN p.blocks_done * 100 / p.blocks_total
+        ELSE 0
+    END as progress
+FROM pg_class c
+JOIN pg_namespace n ON c.relnamespace = n.oid
+LEFT JOIN pg_index i ON c.oid = i.indexrelid
+LEFT JOIN pg_stat_progress_create_index p ON c.oid = p.index_relid
+WHERE c.relname = 'ix_statuses_sort'
+  AND n.nspname = 'app';
+
+CREATE OR REPLACE FUNCTION usp_application_list(
+    p_codes text[] DEFAULT '{}',
+    p_filter_by_codes boolean DEFAULT false
+)
+RETURNS SETOF udt_application_result
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT a.code, a.name, a.description
+    FROM app.applications a
+    WHERE a.is_active
+      AND (NOT p_filter_by_codes OR a.code = ANY (p_codes))
+    ORDER BY a.id, a.code;
+$$;

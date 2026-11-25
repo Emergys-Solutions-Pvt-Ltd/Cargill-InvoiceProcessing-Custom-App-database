@@ -109,33 +109,44 @@ INSERT INTO app.processes (code, name, description, sort_order)
 SELECT 'JDE', 'JDE Process', 'Invoice posted through JD Edwards', 5
 WHERE NOT EXISTS (SELECT 1 FROM app.processes WHERE lower(code) = 'jde' OR lower(name) = 'jde process');
 
--- Workflow fields for demo invoices that do not have them yet (Invoice Details page)
-WITH queues AS (
-    SELECT id, (row_number() OVER (ORDER BY sort_order, id) - 1)::int AS idx, count(*) OVER ()::int AS n
-    FROM app.teams WHERE is_active
-),
-places AS (
-    SELECT id, (row_number() OVER (ORDER BY id) - 1)::int AS idx, count(*) OVER ()::int AS n FROM app.cities
-),
-targets AS (
-    SELECT i.id, (row_number() OVER (PARTITION BY i.module_id ORDER BY i.id) - 1)::int AS k, m.slug
-    FROM app.invoices i JOIN app.app_modules m ON m.id = i.module_id
-    WHERE i.team_id IS NULL
-)
-UPDATE app.invoices i
-SET team_id             = q.id,
-    process_id          = (SELECT p.id FROM app.processes p WHERE p.code = CASE
-                               WHEN t.slug IN ('GP', 'gpp', 'gp-tool') THEN 'JDE'
-                               WHEN t.slug = 'freight-processing' THEN 'FREIGHT-INV'
-                               WHEN t.slug LIKE 'sjo-index%' THEN 'INDEX-PROC'
-                               WHEN t.slug LIKE 'sjo%' THEN 'PAYMENT'
-                               ELSE 'INV-REPORT' END),
-    origin_city_id      = (SELECT c.id FROM places c WHERE c.idx = t.k % c.n),
-    destination_city_id = (SELECT c.id FROM places c WHERE c.idx = (t.k + 3) % c.n),
-    filenet_id          = coalesce(i.filenet_id, '{' || upper(substr(md5(i.invoice_code), 1, 8)) || '-' || upper(substr(md5(i.invoice_code), 9, 4)) || '}')
-FROM targets t
-JOIN queues q ON q.idx = t.k % q.n
-WHERE i.id = t.id;
+-- Workflow fields for demo invoices that do not have them yet (Invoice Details page), in each app's own
+-- invoice table (gpp.gpp_invoices, sjo.sjo_invoices, rospbu.rospbu_invoices - there is no app.invoices)
+DO $$
+DECLARE v_schema text;
+BEGIN
+    FOR v_schema IN SELECT DISTINCT db_schema FROM app.applications WHERE db_schema IS NOT NULL ORDER BY 1
+    LOOP
+        EXECUTE format($sql$
+            WITH queues AS (
+                SELECT id, (row_number() OVER (ORDER BY sort_order, id) - 1)::int AS idx, count(*) OVER ()::int AS n
+                FROM app.teams WHERE is_active
+            ),
+            places AS (
+                SELECT id, (row_number() OVER (ORDER BY id) - 1)::int AS idx, count(*) OVER ()::int AS n FROM app.cities
+            ),
+            targets AS (
+                SELECT i.id, (row_number() OVER (PARTITION BY i.module_id ORDER BY i.invoice_code) - 1)::int AS k, m.slug
+                FROM %1$I.%2$I i JOIN app.app_modules m ON m.id = i.module_id
+                WHERE i.team_id IS NULL
+            )
+            UPDATE %1$I.%2$I i
+            SET team_id             = q.id,
+                process_id          = (SELECT p.id FROM app.processes p WHERE p.code = CASE
+                                           WHEN t.slug IN ('GP', 'gpp', 'gp-tool') THEN 'JDE'
+                                           WHEN t.slug = 'freight-processing' THEN 'FREIGHT-INV'
+                                           WHEN t.slug LIKE 'sjo-index%%' THEN 'INDEX-PROC'
+                                           WHEN t.slug LIKE 'sjo%%' THEN 'PAYMENT'
+                                           ELSE 'INV-REPORT' END),
+                origin_city_id      = (SELECT c.id FROM places c WHERE c.idx = t.k %% c.n),
+                destination_city_id = (SELECT c.id FROM places c WHERE c.idx = (t.k + 3) %% c.n),
+                filenet_id          = coalesce(i.filenet_id, '{' || upper(substr(md5(i.invoice_code), 1, 8)) || '-'
+                                               || upper(substr(md5(i.invoice_code), 9, 4)) || '}')
+            FROM targets t
+            JOIN queues q ON q.idx = t.k %% q.n
+            WHERE i.id = t.id
+        $sql$, v_schema, v_schema || '_invoices');
+    END LOOP;
+END $$;
 
 COMMIT;
 

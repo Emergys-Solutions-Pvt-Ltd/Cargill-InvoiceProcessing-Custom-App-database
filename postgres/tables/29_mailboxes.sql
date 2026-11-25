@@ -5,8 +5,8 @@
 -- delta_link is the Microsoft Graph delta cursor: NULL = next poll does a full sync
 -- of the folder; otherwise only changes since the previous poll are read.
 -- Depends on: app.app_modules
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.mailboxes (
     id              uuid DEFAULT gen_random_uuid() CONSTRAINT pk_mailboxes PRIMARY KEY,
@@ -25,5 +25,3 @@ CREATE TABLE IF NOT EXISTS app.mailboxes (
 CREATE UNIQUE INDEX IF NOT EXISTS uq_mailboxes_address_folder ON app.mailboxes (lower(address), lower(folder));
 -- Poller: active mailboxes
 CREATE INDEX IF NOT EXISTS ix_mailboxes_active ON app.mailboxes (id) WHERE is_active;
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

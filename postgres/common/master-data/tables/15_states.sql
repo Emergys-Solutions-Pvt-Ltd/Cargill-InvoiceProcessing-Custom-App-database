@@ -1,8 +1,8 @@
 -- =====================================================================
 -- app.states - Configuration > States / provinces, each belonging to a country
 -- Depends on: app.countries
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.states (
     id          uuid DEFAULT gen_random_uuid() CONSTRAINT pk_states PRIMARY KEY,
@@ -19,5 +19,3 @@ CREATE TABLE IF NOT EXISTS app.states (
 CREATE UNIQUE INDEX IF NOT EXISTS uq_states_name ON app.states (country_id, lower(name));
 CREATE UNIQUE INDEX IF NOT EXISTS uq_states_code ON app.states (country_id, lower(code)) WHERE code IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_states_country ON app.states (country_id);
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

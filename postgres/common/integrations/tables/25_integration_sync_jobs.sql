@@ -6,8 +6,8 @@
 -- processed page, so they always match what was committed.
 -- Status: queued -> running -> succeeded | partially_succeeded | failed | cancelled
 -- Depends on: app.integrations, app_auth.users
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.integration_sync_jobs (
     id                  uuid DEFAULT gen_random_uuid() CONSTRAINT pk_integration_sync_jobs PRIMARY KEY,
@@ -56,5 +56,3 @@ BEGIN
             FOREIGN KEY (last_job_id) REFERENCES app.integration_sync_jobs (id) ON DELETE SET NULL;
     END IF;
 END $$;
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

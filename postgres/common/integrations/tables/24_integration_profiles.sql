@@ -4,8 +4,8 @@
 -- extraction settings (OData entity set, $filter, $select ...), the mapping of source fields
 -- to the application's invoice fields, and the incremental cursor (watermark).
 -- Depends on: app.integrations, app.app_modules
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app.integration_profiles (
     id                      uuid DEFAULT gen_random_uuid() CONSTRAINT pk_integration_profiles PRIMARY KEY,
@@ -33,5 +33,3 @@ CREATE TABLE IF NOT EXISTS app.integration_profiles (
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_integration_profiles_name ON app.integration_profiles (integration_id, lower(name));
 CREATE INDEX IF NOT EXISTS ix_integration_profiles_module ON app.integration_profiles (module_id);
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

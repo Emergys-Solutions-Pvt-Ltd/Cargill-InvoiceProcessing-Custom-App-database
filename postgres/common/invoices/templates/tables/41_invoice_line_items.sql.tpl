@@ -1,8 +1,8 @@
 -- =====================================================================
 -- {{S}}.invoice_line_items - {{APP}} Invoice Overview line items (Código, Descripción, Cantidad, ...)
 -- Depends on: {{S}}.{{T}}
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS {{S}}.invoice_line_items (
     id                  uuid DEFAULT gen_random_uuid() CONSTRAINT pk_{{S}}_line_items PRIMARY KEY,
@@ -19,5 +19,3 @@ CREATE TABLE IF NOT EXISTS {{S}}.invoice_line_items (
     subtotal_with_vat   numeric(18,2)   NOT NULL,
     CONSTRAINT uq_{{S}}_line_items UNIQUE (invoice_id, line_no)
 );
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----

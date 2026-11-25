@@ -1,0 +1,15 @@
+# Build / deployment outputs (published as pipeline artifacts, never committed)
+Artifacts/
+!Artifacts/.gitkeep
+
+# Local environment files with credentials
+*.env.local
+.env
+.env.*
+!config/environments/*.env
+
+# Tooling
+__pycache__/
+*.pyc
+.venv/
+.sqlfluff_cache/

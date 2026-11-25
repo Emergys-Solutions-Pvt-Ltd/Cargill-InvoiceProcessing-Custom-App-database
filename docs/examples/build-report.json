@@ -1,0 +1,19 @@
+{
+  "status": "succeeded",
+  "generated_at": "2026-11-16T18:42:59Z",
+  "source_commit": "0000000000000000000000000000000000000000",
+  "files": 192,
+  "objects": 286,
+  "object_counts": {
+    "function": 109,
+    "index": 79,
+    "table": 41,
+    "type": 53,
+    "view": 4
+  },
+  "schema_sql_sha256": "d96cc8194648c228b32822d050f6a67a816205bf69f2378d9964475855edc873",
+  "predeploy_sql_sha256": "e989887b9e6894f35e13e8406ce28418bc45e4f6180c59f36a7fc9d00723abef",
+  "postdeploy_sql_sha256": "a5dcea4b7bfa1225b90ed6b462b34e8abe00a4c5bdcb97ca81402628d90f10fd",
+  "errors": [],
+  "warnings": []
+}

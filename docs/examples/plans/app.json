@@ -1,0 +1,54 @@
+{
+  "version": "1.0.0",
+  "pgschema_version": "1.14.1",
+  "created_at": "2026-11-16T18:44:43Z",
+  "source_fingerprint": {
+    "hash": "7ec994d39f5e71ec6121e2037d76eaa5809fbbdefa4a6b229a170b8d3257c4b3"
+  },
+  "groups": [
+    {
+      "steps": [
+        {
+          "sql": "DROP FUNCTION IF EXISTS usp_mailbox_list_for_application(text);",
+          "type": "function",
+          "operation": "drop",
+          "path": "app.usp_mailbox_list_for_application"
+        }
+      ]
+    },
+    {
+      "steps": [
+        {
+          "sql": "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_statuses_sort ON app.statuses (sort_order);",
+          "type": "table.index",
+          "operation": "create",
+          "path": "app.statuses.ix_statuses_sort"
+        }
+      ]
+    },
+    {
+      "steps": [
+        {
+          "sql": "SELECT \n    COALESCE(i.indisvalid, false) as done,\n    CASE \n        WHEN p.blocks_total > 0 THEN p.blocks_done * 100 / p.blocks_total\n        ELSE 0\n    END as progress\nFROM pg_class c\nJOIN pg_namespace n ON c.relnamespace = n.oid\nLEFT JOIN pg_index i ON c.oid = i.indexrelid\nLEFT JOIN pg_stat_progress_create_index p ON c.oid = p.index_relid\nWHERE c.relname = 'ix_statuses_sort'\n  AND n.nspname = 'app';",
+          "directive": {
+            "type": "wait",
+            "message": "Creating index ix_statuses_sort"
+          },
+          "type": "table.index",
+          "operation": "create",
+          "path": "app.statuses.ix_statuses_sort"
+        }
+      ]
+    },
+    {
+      "steps": [
+        {
+          "sql": "CREATE OR REPLACE FUNCTION usp_application_list(\n    p_codes text[] DEFAULT '{}',\n    p_filter_by_codes boolean DEFAULT false\n)\nRETURNS SETOF udt_application_result\nLANGUAGE sql\nSTABLE\nAS $$\n    SELECT a.code, a.name, a.description\n    FROM app.applications a\n    WHERE a.is_active\n      AND (NOT p_filter_by_codes OR a.code = ANY (p_codes))\n    ORDER BY a.id, a.code;\n$$;",
+          "type": "function",
+          "operation": "alter",
+          "path": "app.usp_application_list"
+        }
+      ]
+    }
+  ]
+}

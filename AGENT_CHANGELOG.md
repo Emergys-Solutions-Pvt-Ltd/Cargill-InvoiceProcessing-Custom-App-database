@@ -26,6 +26,97 @@ Written for a future developer who has no context.
 
 ---
 
+## 2026-11-24 — Invoice Audit History deployed to Supabase by hand (Feature: invoice-audit-history)
+**Agent:** database-agent · **Status:** Done (user-approved one-off apply) · **Handoffs:** none
+
+### What changed (database, not files)
+- Supabase (session pooler, db `postgres`, PostgreSQL 17.11): applied `app.invoice_audit_log` (+ index), `app.udt_invoice_audit_result`,
+  `app.ufn_invoice_audit_label`, `app.ufn_invoice_audit_trigger`, `gpp|sjo|rospbu.usp_invoice_audit_list` and the three
+  `trg_<app>_invoices_audit` triggers, in ONE transaction, definitions generated from the repo files (types guarded, EXECUTE revoked
+  from PUBLIC). Rehearsed first on a disposable PostgreSQL (apply on a DB without the objects, re-apply, tests).
+- Before: read-only check (schemas, dependencies, needed columns on the 3 invoice tables, no audit objects present).
+- After: `tests/test_invoice_audit.sql` passed on Supabase inside a rolled-back transaction; verify: all objects present,
+  0 audit rows, invoice row counts unchanged (77 / 54 / 36).
+
+### Why
+The Vela pipeline cannot run yet (TOOLS_IMAGE placeholder, no `dev` branch, no Docker on the dev machine); the user asked to deploy now.
+
+### Still to do / known issues
+- The first pipeline run must plan no change for these objects (drift check); if pgschema plans differently, review before applying.
+- History starts now: existing invoices have no "Created" event. Until the new backend is deployed, API changes are attributed to
+  `updated_by` when it changes, otherwise "System".
+- Rollback (if ever needed): drop the 3 triggers, the 5 functions, the type and the table (the history is lost).
+
+---
+
+## 2026-11-24 — Invoice Audit History: audit table + trigger + list function (Feature: invoice-audit-history)
+**Agent:** database-agent · **Status:** Done (structure build + SQL tests on a disposable PostgreSQL 17 / PGlite; not deployed) · **Handoffs:** none
+
+### What changed
+- `postgres/common/invoices/tables/46_invoice_audit_log.sql` (new) — `app.invoice_audit_log`: one row per create / update / delete
+  of an app invoice row (`app_schema`, `invoice_id`, `invoice_code`, `action`, `changes` jsonb, `actor_user_id`, `created_at`,
+  `event_seq` for ordering). No FK to the invoice (history outlives a delete).
+- `postgres/common/invoices/functions/ufn_invoice_audit_trigger.sql` (new) — AFTER INSERT/UPDATE/DELETE row trigger function:
+  changed columns only (updated_at/updated_by/created_at/created_by ignored; an update changing nothing else writes no row).
+  Actor = session setting `app.user_id` (set by the API per call), else created_by / a changed updated_by, else NULL = system.
+- `postgres/common/invoices/functions/ufn_invoice_audit_label.sql` (new) — reference ids stored as names (process, cities, team,
+  assigned user, vendor, station, module, country, BU, ERP) at the time of the change.
+- `postgres/common/invoices/templates/triggers/trg_{{T}}_audit.sql.tpl` (new) -> `<app>/invoices/triggers/trg_<app>_invoices_audit.sql`.
+- `postgres/common/invoices/templates/procedures/usp_invoice_audit_list.sql.tpl` (new) -> `<app>.usp_invoice_audit_list(p_invoice_code)`
+  returning `app.udt_invoice_audit_result` (new type) newest first; CA404 for an unknown invoice.
+- `postgres/objects.sql` — the new files (table, type, functions, procedures, a new "Triggers" section at the end).
+- `postgres/tests/test_invoice_audit.sql` (new) — created / updated / actor / names / no-op update / system / list / CA404 / deleted.
+
+### Why
+Invoice Details gets an "Audit History" tab (actions on the invoice with date/time, user and field changes). A trigger catches
+every write path (UI, bulk create, SAP / OnBase sync, mailbox) without changing any usp_* signature.
+
+### Checks
+`Build/lib/dbproject.py build` ok (297 objects, 3 triggers); predeploy + schema + postdeploy + seed + all 4 SQL test files pass on
+PGlite (PostgreSQL 17 in-process; Docker was not available, so `tests/deploy/run-local.sh` and the pgschema plan were not run).
+
+### Still to do / known issues
+- Run `bash tests/deploy/run-local.sh` / the pipeline plan once (first trigger in the project: check pgschema plans it as expected).
+- History starts at deployment; existing invoices have no "Created" event. CCPP rows, attachments and line items are not audited.
+- `Artifacts/` not regenerated here (the build does it).
+
+---
+
+## 2026-11-16 — DACPAC-style database project: build, pgschema plans, Vela pipeline (Feature: database-devops)
+**Agent:** database-agent · **Status:** Done locally (no real environment deployed) · **Handoffs:** none
+
+### What changed
+- `docs/ASSESSMENT.md` — phase-1 assessment (inventory, verified tool behaviour, risks).
+- Table files folded declaratively: every UPGRADES section merged into its `CREATE TABLE` (verified: a build of the new
+  files and of the old files are identical for pgschema in all 5 schemas). Reference rows moved to
+  `postgres/postdeploy/{10_applications_db_schema,20_statuses,30_master_data_entities}.sql`; schemas / default privileges
+  to `postgres/predeploy/00_schemas.sql`; `postgres/objects.sql` = ordered object manifest.
+- `postgres/deploy_schema.sql` — now local bootstrap only (predeploy + objects.sql + postdeploy).
+- `common/shared/migrations/ids_to_uuid.sql` moved to `ManualMigrations/Schema/2026-11-12_ids_to_uuid.sql`.
+- `postgres/seed_master_data.sql` — fixed: updated the removed `app.invoices`; now updates each app's invoice table
+  (fresh docker databases failed to seed before).
+- New: `Build/{common,build-schema,validate-schema,generate-plan,deploy,verify}.sh`, `Build/lib/dbproject.py`,
+  `config/project.conf`, `config/environments/{dev,uat,prod,local}.env`, `Docker/Dockerfile`, `.vela.yml`, `.sqlfluff`,
+  `.gitattributes`, `.gitignore`, `.dockerignore`, `tests/deploy/{scenarios,run-local}.sh`, `docs/DEPLOYMENT.md`,
+  `ManualMigrations/README.md`; README / CLAUDE.md / DECISIONS (D-DB-004) updated.
+
+### Why
+User request: source-controlled PostgreSQL project with build, validation, schema comparison, generated deployment
+SQL + JSON plan, DEV/UAT/PROD deployments through Vela, open-source tools only.
+
+### Cross-repo impact
+- backend: `docker-compose.yml` still mounts `postgres/` and runs `deploy_schema.sql` + `seed.sql` (still works).
+  No object definitions changed.
+
+### New env vars / dependencies / commands for the user
+- Vela repo secrets `{dev,uat,prod}_db_{host,port,name,user,password}`; tool image to publish (replace `TOOLS_IMAGE`).
+- `bash tests/deploy/run-local.sh` (Docker) runs the deployment scenario tests.
+
+### Still to do / known issues
+- Not run in Vela or against Supabase yet (no access): first DEV run must be watched. `dev` / `uat` branches do not exist yet.
+
+---
+
 ## 2026-11-16 — Mailbox settings + Inbox objects converted from integer ids to uuid (Feature: email-configuration + email-inbox)
 **Agent:** database-agent · **Status:** Done (not deployed; nothing executed against any DB) · **Handoffs:** none (contract in parent `DECISIONS.md` D-024, D-025)
 

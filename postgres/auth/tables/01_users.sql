@@ -1,7 +1,7 @@
 -- =====================================================================
 -- app_auth.users - platform users (Login, Settings / User Access Management)
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS app_auth.users (
     id              uuid DEFAULT gen_random_uuid() CONSTRAINT pk_users PRIMARY KEY,
@@ -23,7 +23,3 @@ CREATE TABLE IF NOT EXISTS app_auth.users (
 -- Case-insensitive uniqueness (emails / usernames are compared with lower())
 CREATE UNIQUE INDEX IF NOT EXISTS uq_users_email    ON app_auth.users (lower(email));
 CREATE UNIQUE INDEX IF NOT EXISTS uq_users_username ON app_auth.users (lower(username));
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----
--- Example:
--- ALTER TABLE app_auth.users ADD COLUMN IF NOT EXISTS phone varchar(30) NULL;

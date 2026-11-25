@@ -1,0 +1,8 @@
+# Scripts run in Linux containers: keep LF endings regardless of core.autocrlf
+*.sh   text eol=lf
+*.py   text eol=lf
+*.yml  text eol=lf
+*.conf text eol=lf
+*.env  text eol=lf
+Dockerfile text eol=lf
+.sqlfluff text eol=lf

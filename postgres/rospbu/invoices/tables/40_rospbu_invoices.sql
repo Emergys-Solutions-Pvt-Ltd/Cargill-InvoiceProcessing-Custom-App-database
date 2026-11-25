@@ -5,8 +5,8 @@
 -- Common core columns (identical in gpp / sjo / rospbu) + the ROSPBU fields.
 -- Depends on: app.app_modules, app.vendors, app.country_stations, app.statuses, app.processes,
 --             app.cities, app.teams, app_auth.users, app.countries, app.business_units, sjo.erp_systems
--- Idempotent: creates the table when missing; the UPGRADES section brings
--- existing databases up to date. Run through deploy_schema.sql.
+-- Declarative: the final shape of the table. Existing databases are brought to it by the
+-- generated deployment plan (Build/generate-plan.sh, pgschema); never append ALTER statements here.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS rospbu.rospbu_invoices (
     id                          uuid DEFAULT gen_random_uuid() CONSTRAINT pk_rospbu_invoices PRIMARY KEY,
@@ -78,31 +78,4 @@ CREATE INDEX IF NOT EXISTS ix_rospbu_invoices_module_received ON rospbu.rospbu_i
 CREATE INDEX IF NOT EXISTS ix_rospbu_invoices_vendor          ON rospbu.rospbu_invoices (vendor_id);
 CREATE INDEX IF NOT EXISTS ix_rospbu_invoices_team            ON rospbu.rospbu_invoices (team_id);
 CREATE INDEX IF NOT EXISTS ix_rospbu_invoices_assigned_user   ON rospbu.rospbu_invoices (assigned_user_id);
-
--- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----
-
--- ROSPBU fields (databases created before they existed)
-ALTER TABLE rospbu.rospbu_invoices
-    ADD COLUMN IF NOT EXISTS country_id uuid NULL CONSTRAINT fk_rospbu_invoices_country REFERENCES app.countries (id),
-    ADD COLUMN IF NOT EXISTS business_unit_id uuid NULL CONSTRAINT fk_rospbu_invoices_bu REFERENCES app.business_units (id),
-    ADD COLUMN IF NOT EXISTS erp_system_id uuid NULL CONSTRAINT fk_rospbu_invoices_erp REFERENCES sjo.erp_systems (id),
-    ADD COLUMN IF NOT EXISTS retencion varchar(50) NOT NULL DEFAULT 'No aplica',
-    ADD COLUMN IF NOT EXISTS codigo_imputacion varchar(255) NULL,
-    ADD COLUMN IF NOT EXISTS nro_ar varchar(50) NULL,
-    ADD COLUMN IF NOT EXISTS cantidad numeric(18,2) NULL,
-    ADD COLUMN IF NOT EXISTS producto varchar(255) NULL,
-    ADD COLUMN IF NOT EXISTS np varchar(4000) NULL,
-    ADD COLUMN IF NOT EXISTS nro_remito varchar(50) NULL,
-    ADD COLUMN IF NOT EXISTS filial varchar(100) NULL,
-    ADD COLUMN IF NOT EXISTS numero_documento varchar(50) NULL,
-    ADD COLUMN IF NOT EXISTS general_comment varchar(1000) NULL,
-    ADD COLUMN IF NOT EXISTS centro_emisor varchar(20) NULL,
-    ADD COLUMN IF NOT EXISTS due_date date NULL,
-    ADD COLUMN IF NOT EXISTS po_number varchar(50) NULL,
-    ADD COLUMN IF NOT EXISTS instrumento_pago varchar(100) NULL,
-    ADD COLUMN IF NOT EXISTS timbrado varchar(50) NULL,
-    ADD COLUMN IF NOT EXISTS bp_number varchar(50) NULL,
-    ADD COLUMN IF NOT EXISTS numero_liquidacion varchar(50) NULL,
-    ADD COLUMN IF NOT EXISTS branch_plant varchar(100) NULL,
-    ADD COLUMN IF NOT EXISTS tipo_operacion varchar(100) NULL;
 
