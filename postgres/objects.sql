@@ -55,6 +55,7 @@
 \ir rospbu/invoices/tables/43_invoice_attachments.sql
 \ir rospbu/invoices/tables/44_invoice_external_refs.sql
 \ir gpp/tables/45_invoice_ccpps.sql
+\ir common/invoices/tables/46_invoice_audit_log.sql
 
 -- ---- Mailbox inbox (background email reading, Inbox page) ----
 \ir tables/29_mailboxes.sql
@@ -79,6 +80,7 @@
 \ir common/invoices/types/udt_line_item_result.sql
 \ir gpp/types/udt_ccpp_result.sql
 \ir common/invoices/types/udt_invoice_email_result.sql
+\ir common/invoices/types/udt_invoice_audit_result.sql
 \ir gpp/types/udt_invoice_sf_fields_result.sql
 \ir sjo/types/udt_invoice_sjo_fields_result.sql
 \ir gpp/invoices/types/udt_invoice_input.sql
@@ -127,6 +129,8 @@
 \ir common/integrations/functions/ufn_sync_job_row.sql
 \ir common/integrations/functions/ufn_external_ref_count.sql
 \ir functions/ufn_mailbox_row.sql
+\ir common/invoices/functions/ufn_invoice_audit_label.sql
+\ir common/invoices/functions/ufn_invoice_audit_trigger.sql
 \ir auth/views/vw_user_summary.sql
 \ir gpp/invoices/views/vw_invoice_summary.sql
 \ir sjo/invoices/views/vw_invoice_summary.sql
@@ -153,6 +157,7 @@
 \ir gpp/invoices/procedures/usp_invoice_send_to_previous_team.sql
 \ir gpp/invoices/procedures/usp_attachment.sql
 \ir gpp/invoices/procedures/usp_sync_invoice_apply.sql
+\ir gpp/invoices/procedures/usp_invoice_audit_list.sql
 \ir sjo/invoices/procedures/usp_invoice_list.sql
 \ir sjo/invoices/procedures/usp_invoice_get_by_code.sql
 \ir sjo/invoices/procedures/usp_invoice_create_batch.sql
@@ -161,6 +166,7 @@
 \ir sjo/invoices/procedures/usp_invoice_send_to_previous_team.sql
 \ir sjo/invoices/procedures/usp_attachment.sql
 \ir sjo/invoices/procedures/usp_sync_invoice_apply.sql
+\ir sjo/invoices/procedures/usp_invoice_audit_list.sql
 \ir rospbu/invoices/procedures/usp_invoice_list.sql
 \ir rospbu/invoices/procedures/usp_invoice_get_by_code.sql
 \ir rospbu/invoices/procedures/usp_invoice_create_batch.sql
@@ -169,6 +175,7 @@
 \ir rospbu/invoices/procedures/usp_invoice_send_to_previous_team.sql
 \ir rospbu/invoices/procedures/usp_attachment.sql
 \ir rospbu/invoices/procedures/usp_sync_invoice_apply.sql
+\ir rospbu/invoices/procedures/usp_invoice_audit_list.sql
 \ir gpp/procedures/usp_ccpp_list.sql
 \ir gpp/procedures/usp_ccpp_save.sql
 \ir sjo/procedures/usp_invoice_sjo_fields_save.sql
@@ -228,3 +235,8 @@
 \ir procedures/mailbox/usp_mailbox_attachment_list.sql
 \ir procedures/mailbox/usp_mailbox_attachment_get_by_id.sql
 \ir procedures/mailbox/usp_mailbox_list_for_application.sql
+
+-- ---- Triggers (after the tables and their trigger functions) ----
+\ir gpp/invoices/triggers/trg_gpp_invoices_audit.sql
+\ir sjo/invoices/triggers/trg_sjo_invoices_audit.sql
+\ir rospbu/invoices/triggers/trg_rospbu_invoices_audit.sql
