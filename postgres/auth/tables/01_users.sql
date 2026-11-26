@@ -27,3 +27,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_users_username ON app_auth.users (lower(use
 -- ---- UPGRADES (append guarded changes; never edit the CREATE above for existing DBs) ----
 -- Example:
 -- ALTER TABLE app_auth.users ADD COLUMN IF NOT EXISTS phone varchar(30) NULL;
+-- A user belongs to at most one team (app.teams, Settings > Configuration > Teams).
+-- The FK fk_users_team is added in common/master-data/tables/05_teams.sql (app.teams is created after this file).
+ALTER TABLE app_auth.users ADD COLUMN IF NOT EXISTS team_id uuid NULL;
+CREATE INDEX IF NOT EXISTS ix_users_team ON app_auth.users (team_id);

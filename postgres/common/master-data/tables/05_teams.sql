@@ -25,3 +25,12 @@ BEGIN
     END IF;
 END $$;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_teams_code ON app.teams (lower(code)) WHERE code IS NOT NULL;
+-- Settings > Users: a user's single team (app_auth.users.team_id, added in auth/tables/01_users.sql).
+-- Teams are only deactivated, never deleted; SET NULL is a safety net.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_users_team' AND conrelid = 'app_auth.users'::regclass) THEN
+        ALTER TABLE app_auth.users
+            ADD CONSTRAINT fk_users_team FOREIGN KEY (team_id) REFERENCES app.teams (id) ON DELETE SET NULL;
+    END IF;
+END $$;

@@ -11,7 +11,7 @@ RETURNS SETOF app_auth.udt_user_result
 LANGUAGE sql
 STABLE
 AS $$
-    SELECT id, username, name, email, role, status, auth_provider, assigned_apps
+    SELECT id, username, name, email, role, status, auth_provider, assigned_apps, team_id, team_name
     FROM app_auth.vw_user_summary
     WHERE id = p_user_id
       AND (NOT p_active_only OR status = 'Active');

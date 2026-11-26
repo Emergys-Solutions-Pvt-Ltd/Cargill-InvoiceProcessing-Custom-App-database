@@ -1,9 +1,11 @@
 -- =====================================================================
 -- app_auth.usp_user_create - "Add New User" (Settings / UAM)
--- Request:  user fields + p_app_codes (application codes to grant).
+-- Request:  user fields + p_app_codes (application codes to grant) + p_team_id (optional,
+--           an active app.teams id - Settings > Configuration > Teams; one team per user).
 --           p_password_hash is a bcrypt hash for LOCAL users, NULL for AD users.
 -- Response: app_auth.udt_user_result (the created user)
--- Errors:   CA400 invalid role / provider / unknown application code, or LOCAL without password
+-- Errors:   CA400 invalid role / provider / unknown application code / unknown or inactive team,
+--           or LOCAL without password
 --           CA409 email or username already exists
 -- =====================================================================
 CREATE OR REPLACE FUNCTION app_auth.usp_user_create(
@@ -13,7 +15,8 @@ CREATE OR REPLACE FUNCTION app_auth.usp_user_create(
     p_role          text    DEFAULT 'User',
     p_auth_provider text    DEFAULT 'AD',
     p_password_hash text    DEFAULT NULL,
-    p_app_codes     text[]  DEFAULT '{}'
+    p_app_codes     text[]  DEFAULT '{}',
+    p_team_id       uuid    DEFAULT NULL
 )
 RETURNS app_auth.udt_user_result
 LANGUAGE plpgsql
@@ -40,18 +43,22 @@ BEGIN
         RAISE EXCEPTION 'Unknown application(s): %', v_unknown USING ERRCODE = 'CA400';
     END IF;
 
+    IF p_team_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM app.teams WHERE id = p_team_id AND is_active) THEN
+        RAISE EXCEPTION 'Unknown or inactive team.' USING ERRCODE = 'CA400';
+    END IF;
+
     IF EXISTS (SELECT 1 FROM app_auth.users WHERE lower(email) = lower(p_email) OR lower(username) = lower(p_username)) THEN
         RAISE EXCEPTION 'A user with email or username ''%'' already exists', p_email USING ERRCODE = 'CA409';
     END IF;
 
-    INSERT INTO app_auth.users (username, name, email, role, auth_provider, password_hash)
-    VALUES (p_username, p_name, p_email, p_role, p_auth_provider, p_password_hash)
+    INSERT INTO app_auth.users (username, name, email, role, auth_provider, password_hash, team_id)
+    VALUES (p_username, p_name, p_email, p_role, p_auth_provider, p_password_hash, p_team_id)
     RETURNING id INTO v_id;
 
     INSERT INTO app_auth.user_applications (user_id, application_id)
     SELECT v_id, a.id FROM app.applications a WHERE a.code = ANY (p_app_codes);
 
-    SELECT id, username, name, email, role, status, auth_provider, assigned_apps
+    SELECT id, username, name, email, role, status, auth_provider, assigned_apps, team_id, team_name
     INTO v_result
     FROM app_auth.vw_user_summary WHERE id = v_id;
     RETURN v_result;

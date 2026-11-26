@@ -12,5 +12,7 @@ CREATE TYPE app_auth.udt_user_result AS (
     role             varchar(20),
     status           varchar(20),
     auth_provider    varchar(20),
-    assigned_apps    text                  -- comma separated application codes, e.g. "GP,sjo"
+    assigned_apps    text,                 -- comma separated application codes, e.g. "GP,sjo"
+    team_id          uuid,                 -- app.teams.id (NULL = no team)
+    team_name        varchar(150)
 );

@@ -26,6 +26,30 @@ Written for a future developer who has no context.
 
 ---
 
+## 2026-11-25 — User team assignment (Feature: users-team)
+**Agent:** database-agent · **Status:** Done (not deployed; nothing executed against any DB) · **Handoffs:** none (BE + FE changed in the same task, user-requested)
+
+### What changed
+- `auth/tables/01_users.sql` — UPGRADES: `team_id uuid NULL` + `ix_users_team`
+- `common/master-data/tables/05_teams.sql` — UPGRADES: guarded `fk_users_team` (app_auth.users.team_id → app.teams.id, ON DELETE SET NULL); lives here because app.teams is created after users
+- `auth/views/vw_user_summary.sql` — adds `team_id`, `team_name` (LEFT JOIN app.teams)
+- `auth/types/udt_user_result.sql`, `udt_user_list_result.sql` — add `team_id`, `team_name`
+- `usp_user_create` — new `p_team_id uuid DEFAULT NULL` (must be an active team, CA400)
+- `usp_user_update` — new `p_team_id`, `p_clear_team boolean DEFAULT false`; keeping an already-assigned deactivated team is allowed
+- `usp_user_get_by_id`, `usp_user_list` — return the team columns
+
+### Why
+Settings > Users: a user belongs to at most one team, chosen from the existing Settings > Configuration > Teams (app.teams).
+
+### Cross-repo impact
+- backend: signature/type changes are already wired in `users.dal.ts`. Deploy DB and API together.
+
+### New env vars / dependencies / commands for the user
+- Run `deploy_schema.sql` (user).
+
+### Still to do / known issues
+- Not related to the per-app access list `app.app_team_members` (Team Assignment); that list is unchanged.
+
 ## 2026-11-16 — Mailbox settings + Inbox objects converted from integer ids to uuid (Feature: email-configuration + email-inbox)
 **Agent:** database-agent · **Status:** Done (not deployed; nothing executed against any DB) · **Handoffs:** none (contract in parent `DECISIONS.md` D-024, D-025)
 

@@ -41,6 +41,7 @@ BEGIN
         FROM (SELECT greatest(1, ceil(max(total)::numeric / p_page_size))::integer AS pages FROM matches) t
     )
     SELECT m.id, m.username, m.name, m.email, m.role, m.status, m.auth_provider, m.assigned_apps,
+           m.team_id, m.team_name,
            m.total, p.pages, p.page, p_page_size
     FROM matches m CROSS JOIN paging p
     WHERE m.rn BETWEEN (p.page - 1) * p_page_size + 1 AND p.page * p_page_size
